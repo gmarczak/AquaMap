@@ -27,3 +27,18 @@ export async function fetchSchedule(placeId) {
     }
     return data;
 }
+
+export async function testConnection() {
+    const { data, error } = await supabase
+        .from('harmonogram_torow')
+        .select('*')
+        .limit(1);
+
+    if (error) {
+        console.error("Błąd połączenia z bazą:", error);
+        return null;
+    }
+
+    console.log("Połączenie udane, dane:", data);
+    return data;
+}
