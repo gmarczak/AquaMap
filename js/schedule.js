@@ -16,7 +16,7 @@ const ZNACZNIKI_GODZIN = [6, 9, 12, 15, 18, 21];
 
 const STATUS_META = {
     wolny: { label: 'Wolny', kolor: '#d5f5e3' },
-    lekcja: { label: 'Zajęcia grupowe', kolor: '#fdebd0' },
+    zajecia: { label: 'Zajęcia grupowe', kolor: '#fdebd0' },
     klub: { label: 'Trening klubowy', kolor: '#d6eaf8' },
     zamkniety: { label: 'Niedostępny', kolor: '#eaeded' }
 };

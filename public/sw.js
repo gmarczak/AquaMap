@@ -1,5 +1,5 @@
-const STATIC_CACHE_NAME = 'aquamap-static-v3';
-const DATA_CACHE_NAME = 'aquamap-data-v1';
+const STATIC_CACHE_NAME = 'aquamap-static-v4';
+const DATA_CACHE_NAME = 'aquamap-data-v2';
 const CDN_CACHE_NAME = 'aquamap-cdn-v1';
 
 const APP_SHELL = [
@@ -13,10 +13,15 @@ const APP_SHELL = [
 
 function cacheResponse(cacheName, request, response) {
     if (!response || !response.ok) {
-        return;
+        return response;
     }
 
-    caches.open(cacheName).then(cache => cache.put(request, response.clone()));
+    // Clone synchronously, before any async work — otherwise the page may
+    // already be reading the original response body by the time this runs,
+    // which leaves the clone in an unusable ("already used") state.
+    const copy = response.clone();
+    caches.open(cacheName).then(cache => cache.put(request, copy));
+    return response;
 }
 
 self.addEventListener('install', event => {
