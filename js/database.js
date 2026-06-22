@@ -1,6 +1,7 @@
+import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from './config.js';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 
 export async function fetchPlaces() {

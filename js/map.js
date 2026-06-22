@@ -1,3 +1,5 @@
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { MAPBOX_ACCESS_TOKEN } from './config.js';
 
 export let map;
@@ -6,17 +8,15 @@ export function initMap(containerId) {
     mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN
 
     map = new mapboxgl.Map({
-        container: 'map', // container ID
+        container: containerId, // container ID
         style: 'mapbox://styles/mapbox/streets-v11', // style URL
         center: [19.1451, 51.9194], // starting position [lng, lat]
-        zoom: 5.5 // starting zoom
+        zoom: 8 // starting zoom
     });
 
     map.addControl(new mapboxgl.NavigationControl());
 
     map.addControl(new mapboxgl.GeolocateControl({
-        //I want smaller zoom
-        zoom: 35,
         positionOptions: { enableHighAccuracy: true },
         trackUserLocation: true,
         showUserHeading: true

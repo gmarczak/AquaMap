@@ -4,6 +4,10 @@ import { renderScheduleTable } from './schedule.js';
 
 initMap('map');
 
+function waitForMapLoad() {
+    return new Promise(resolve => map.on('load', resolve));
+}
+
 async function showDetails(place) {
     document.getElementById('list-view').classList.add('hidden');
     document.getElementById('details-view').classList.remove('hidden');
@@ -53,7 +57,7 @@ function setupSearch() {
 
 async function startApp() {
     const listElement = document.getElementById('places-list');
-    const places = await fetchPlaces();
+    const [, places] = await Promise.all([waitForMapLoad(), fetchPlaces()]);
 
     listElement.innerHTML = '';
 
@@ -77,7 +81,7 @@ async function startApp() {
     setupSearch();
 }
 
-map.on('load', startApp);
+startApp();
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
