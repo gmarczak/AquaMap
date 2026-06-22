@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="AquaMap">
+  <rect width="192" height="192" rx="40" fill="#2c3e50"/>
+  <path d="M96 28c-24 0-44 19-44 43 0 32 44 93 44 93s44-61 44-93c0-24-20-43-44-43zm0 61a18 18 0 1 1 0-36 18 18 0 0 1 0 36z" fill="#5dade2"/>
+  <path d="M48 142c12-8 24-12 48-12s36 4 48 12" fill="none" stroke="#d6eaf8" stroke-width="10" stroke-linecap="round"/>
+</svg>
