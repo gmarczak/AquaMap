@@ -122,6 +122,43 @@ body {
     word-break: break-all;
 }
 
+.cennik-blok {
+    margin: 8px 0;
+    font-size: 14px;
+}
+
+.cennik-lista {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+    border: 1px solid #eaeaea;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.cennik-lista li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 10px;
+    font-size: 13px;
+}
+
+.cennik-lista li:nth-child(odd) {
+    background-color: #f8f9fa;
+}
+
+.cennik-etykieta {
+    color: #555;
+}
+
+.cennik-wartosc {
+    font-weight: 600;
+    color: #2c3e50;
+    text-align: right;
+    white-space: nowrap;
+}
+
 /* Harmonogram torów */
 
 .harmonogram-tytul {

@@ -18,6 +18,39 @@ function updateOfflineBanner() {
     document.getElementById('offline-banner').classList.toggle('hidden', navigator.onLine);
 }
 
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Cennik bywa zapisany jako kilka linijek (np. "Bilet 1h: 22 zł\nKarnet: 65 zł").
+// Renderujemy to jako listę zamiast zlepiać w jeden ciąg tekstu.
+function renderCennik(cennik) {
+    if (!cennik || cennik === 'Brak') {
+        return '<p><strong>💰 Cennik:</strong> Brak</p>';
+    }
+
+    const linie = cennik.split('\n').map(l => l.trim()).filter(Boolean);
+
+    if (linie.length <= 1) {
+        return `<p><strong>💰 Cennik:</strong> ${escapeHtml(cennik)}</p>`;
+    }
+
+    const pozycje = linie.map(linia => {
+        const [etykieta, ...reszta] = linia.split(':');
+        const wartosc = reszta.join(':').trim();
+        return wartosc
+            ? `<li><span class="cennik-etykieta">${escapeHtml(etykieta.trim())}</span><span class="cennik-wartosc">${escapeHtml(wartosc)}</span></li>`
+            : `<li>${escapeHtml(linia)}</li>`;
+    }).join('');
+
+    return `
+        <strong>💰 Cennik:</strong>
+        <ul class="cennik-lista">${pozycje}</ul>
+    `;
+}
+
 async function showDetails(place) {
     document.getElementById('list-view').classList.add('hidden');
     document.getElementById('details-view').classList.remove('hidden');
@@ -27,7 +60,7 @@ async function showDetails(place) {
         <div class="detail-card">
             <h3>${place.nazwa}</h3>
             <p><strong>🕒 Godziny:</strong> ${place.godziny}</p>
-            <p><strong>💰 Cennik:</strong> ${place.cennik}</p>
+            <div class="cennik-blok">${renderCennik(place.cennik)}</div>
             <p><strong>⭐ Ocena:</strong> ${place.ocena}</p>
             <p><strong>🏆 Klub:</strong> ${place.klub}</p>
             <p><strong>🔗 Strona:</strong> ${place.strona && place.strona !== 'Brak' ? `<a href="${place.strona}" target="_blank" rel="noopener">${place.strona}</a>` : 'Brak'}</p>
