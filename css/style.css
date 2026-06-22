@@ -235,6 +235,12 @@ body {
     font-style: italic;
 }
 
+.places-error {
+    font-size: 13px;
+    color: #b00020;
+    padding: 8px 0;
+}
+
 @media (max-width: 768px) {
     #content {
         flex-direction: column-reverse;

@@ -9,7 +9,7 @@ export async function fetchPlaces() {
 
     if (error) {
         console.error('Error fetching data from Supabase:', error);
-        return [];
+        throw error;
     }
     return data;
 }

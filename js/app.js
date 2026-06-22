@@ -57,7 +57,19 @@ function setupSearch() {
 
 async function startApp() {
     const listElement = document.getElementById('places-list');
-    const [, places] = await Promise.all([waitForMapLoad(), fetchPlaces()]);
+    let places;
+
+    try {
+        [, places] = await Promise.all([waitForMapLoad(), fetchPlaces()]);
+    } catch {
+        listElement.innerHTML = '<li class="places-error">Nie udało się załadować danych. Sprawdź połączenie i odśwież stronę.</li>';
+        return;
+    }
+
+    if (places.length === 0) {
+        listElement.innerHTML = '<li class="places-error">Brak basenów do wyświetlenia.</li>';
+        return;
+    }
 
     listElement.innerHTML = '';
 
