@@ -2,7 +2,10 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { MAPBOX_ACCESS_TOKEN } from './config.js';
 
+export { distanceKm } from './geo.js';
+
 export let map;
+export let geolocateControl;
 
 export function initMap(containerId) {
     mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN
@@ -16,11 +19,12 @@ export function initMap(containerId) {
 
     map.addControl(new mapboxgl.NavigationControl());
 
-    map.addControl(new mapboxgl.GeolocateControl({
+    geolocateControl = new mapboxgl.GeolocateControl({
         positionOptions: { enableHighAccuracy: true },
         trackUserLocation: true,
         showUserHeading: true
-    }));
+    });
+    map.addControl(geolocateControl);
 
     return map;
 }

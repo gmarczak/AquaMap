@@ -16,6 +16,7 @@
 </head>
 
 <body>
+    <div id="offline-banner" class="hidden">Jesteś offline — wyświetlane dane mogą być nieaktualne.</div>
     <div id="header">
         <h1>AquaMap</h1>
     </div>
@@ -24,6 +25,7 @@
             <div id="list-view">
                 <h2>Places</h2>
                 <input type="text" id="search-input" placeholder="Szukaj basenu...">
+                <label id="open-now-filter"><input type="checkbox" id="open-now-checkbox"> Tylko otwarte teraz</label>
                 <ul id="places-list">
                     <li>Ładowanie danych...</li>
                 </ul>

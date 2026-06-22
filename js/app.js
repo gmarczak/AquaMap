@@ -1,11 +1,21 @@
-import { initMap, addMarker, flyToLocation, map } from './map.js';
+import { initMap, addMarker, flyToLocation, map, geolocateControl } from './map.js';
 import { fetchPlaces, fetchSchedule } from './database.js';
 import { renderScheduleTable } from './schedule.js';
+import { isOpenNow } from './openingHours.js';
+import { distanceKm } from './geo.js';
 
 initMap('map');
 
+let allPlaces = [];
+let userLocation = null;
+let openNowOnly = false;
+
 function waitForMapLoad() {
     return new Promise(resolve => map.on('load', resolve));
+}
+
+function updateOfflineBanner() {
+    document.getElementById('offline-banner').classList.toggle('hidden', navigator.onLine);
 }
 
 async function showDetails(place) {
@@ -41,45 +51,56 @@ function showList() {
     document.getElementById('list-view').classList.remove('hidden');
 }
 
-function setupSearch() {
-    const searchInput = document.getElementById('search-input');
+function applySearchFilter() {
+    const searchInput = /** @type {HTMLInputElement} */ (document.getElementById('search-input'));
+    const query = searchInput.value.trim().toLowerCase();
 
-    searchInput.addEventListener('input', () => {
-        const query = searchInput.value.trim().toLowerCase();
-
-        document.querySelectorAll('.place-item').forEach(item => {
-            const matches = item.textContent.toLowerCase().includes(query);
-            item.style.display = matches ? '' : 'none';
-        });
+    /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.place-item')).forEach(item => {
+        const matches = item.textContent.toLowerCase().includes(query);
+        item.style.display = matches ? '' : 'none';
     });
 }
 
+function setupSearch() {
+    document.getElementById('search-input').addEventListener('input', applySearchFilter);
+}
 
-async function startApp() {
-    const listElement = document.getElementById('places-list');
-    let places;
+function setupOpenNowFilter() {
+    document.getElementById('open-now-checkbox').addEventListener('change', event => {
+        openNowOnly = /** @type {HTMLInputElement} */ (event.target).checked;
+        renderList();
+    });
+}
 
-    try {
-        [, places] = await Promise.all([waitForMapLoad(), fetchPlaces()]);
-    } catch {
-        listElement.innerHTML = '<li class="places-error">Nie udało się załadować danych. Sprawdź połączenie i odśwież stronę.</li>';
-        return;
+function getVisiblePlaces() {
+    let places = openNowOnly ? allPlaces.filter(place => isOpenNow(place.godziny) !== false) : allPlaces;
+
+    if (userLocation) {
+        places = [...places].sort((a, b) =>
+            distanceKm(userLocation.lat, userLocation.lng, a.lat, a.lng)
+            - distanceKm(userLocation.lat, userLocation.lng, b.lat, b.lng)
+        );
     }
 
+    return places;
+}
+
+function renderList() {
+    const listElement = document.getElementById('places-list');
+    const places = getVisiblePlaces();
+
     if (places.length === 0) {
-        listElement.innerHTML = '<li class="places-error">Brak basenów do wyświetlenia.</li>';
+        listElement.innerHTML = '<li class="places-error">Brak basenów spełniających kryteria.</li>';
         return;
     }
 
     listElement.innerHTML = '';
 
-    document.getElementById('back-button').addEventListener('click', showList);
-
     places.forEach(place => {
-        addMarker(place, () => showDetails(place));
-
         const listItem = document.createElement('li');
-        listItem.textContent = place.nazwa;
+        listItem.textContent = userLocation
+            ? `${place.nazwa} (${distanceKm(userLocation.lat, userLocation.lng, place.lat, place.lng).toFixed(1)} km)`
+            : place.nazwa;
         listItem.classList.add('place-item');
 
         listItem.addEventListener('click', () => {
@@ -90,8 +111,41 @@ async function startApp() {
         listElement.appendChild(listItem);
     });
 
-    setupSearch();
+    applySearchFilter();
 }
+
+geolocateControl.on('geolocate', position => {
+    userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+    renderList();
+});
+
+async function startApp() {
+    const listElement = document.getElementById('places-list');
+
+    try {
+        [, allPlaces] = await Promise.all([waitForMapLoad(), fetchPlaces()]);
+    } catch {
+        listElement.innerHTML = '<li class="places-error">Nie udało się załadować danych. Sprawdź połączenie i odśwież stronę.</li>';
+        return;
+    }
+
+    if (allPlaces.length === 0) {
+        listElement.innerHTML = '<li class="places-error">Brak basenów do wyświetlenia.</li>';
+        return;
+    }
+
+    document.getElementById('back-button').addEventListener('click', showList);
+
+    allPlaces.forEach(place => addMarker(place, () => showDetails(place)));
+
+    renderList();
+    setupSearch();
+    setupOpenNowFilter();
+}
+
+updateOfflineBanner();
+window.addEventListener('online', updateOfflineBanner);
+window.addEventListener('offline', updateOfflineBanner);
 
 startApp();
 
