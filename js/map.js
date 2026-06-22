@@ -1,7 +1,9 @@
+import { MAPBOX_ACCESS_TOKEN } from './config.js';
+
 export let map;
 
 export function initMap(containerId) {
-    mapboxgl.accessToken = 'pk.eyJ1IjoiZ21hcmN6YWsiLCJhIjoiY21xb3lndW0xMDFxZzJyc2NjdjFuZXZxMCJ9.DUJPnhHCzHUs_M34h6dEnQ'
+    mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN
 
     map = new mapboxgl.Map({
         container: 'map', // container ID

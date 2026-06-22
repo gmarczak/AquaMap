@@ -1,6 +1,6 @@
-const supabaseUrl = "https://yxjnjrborhatabnmjlqe.supabase.co"
-const supabasekey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4am5qcmJvcmhhdGFibm1qbHFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMTcxNDUsImV4cCI6MjA5NzY5MzE0NX0.vs4dPfY7tVMsDNu_fVBXtF60iA51xdo71XQnzlbhlu4"
-const supabase = window.supabase.createClient(supabaseUrl, supabasekey)
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from './config.js';
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 
 export async function fetchPlaces() {
