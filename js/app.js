@@ -1,9 +1,10 @@
 import { initMap, addMarker, flyToLocation, map } from './map.js';
-import { fetchPlaces } from './database.js';
+import { fetchPlaces, fetchSchedule } from './database.js';
+import { renderScheduleTable } from './schedule.js';
 
 initMap('map');
 
-function showDetails(place) {
+async function showDetails(place) {
     document.getElementById('list-view').classList.add('hidden');
     document.getElementById('details-view').classList.remove('hidden');
 
@@ -15,16 +16,38 @@ function showDetails(place) {
             <p><strong>💰 Cennik:</strong> ${place.cennik}</p>
             <p><strong>⭐ Ocena:</strong> ${place.ocena}</p>
             <p><strong>🏆 Klub:</strong> ${place.klub}</p>
-            <div style="margin-top: 15px; padding: 10px; background: #fdf2e9; border-left: 4px solid #e67e22; border-radius: 4px;">
-                <p style="margin: 0; font-size: 0.9em;"><strong>Harmonogram torów:</strong><br>${place.harmonogram}</p>
-            </div>
+            <p><strong>🔗 Strona:</strong> ${place.strona && place.strona !== 'Brak' ? `<a href="${place.strona}" target="_blank" rel="noopener">${place.strona}</a>` : 'Brak'}</p>
+            <h4 class="harmonogram-tytul">Harmonogram torów</h4>
+            <div id="harmonogram-container">Wczytywanie harmonogramu...</div>
         </div>
     `;
+
+    const harmonogramContainer = document.getElementById('harmonogram-container');
+    const harmonogram = await fetchSchedule(place.id);
+
+    if (harmonogram.length === 0) {
+        harmonogramContainer.innerHTML = '<p class="harmonogram-brak">Brak danych o harmonogramie dla tego basenu.</p>';
+    } else {
+        renderScheduleTable(harmonogramContainer, harmonogram, place.liczba_torow || 6);
+    }
 }
 
 function showList() {
     document.getElementById('details-view').classList.add('hidden');
     document.getElementById('list-view').classList.remove('hidden');
+}
+
+function setupSearch() {
+    const searchInput = document.getElementById('search-input');
+
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim().toLowerCase();
+
+        document.querySelectorAll('.place-item').forEach(item => {
+            const matches = item.textContent.toLowerCase().includes(query);
+            item.style.display = matches ? '' : 'none';
+        });
+    });
 }
 
 
@@ -50,6 +73,8 @@ async function startApp() {
 
         listElement.appendChild(listItem);
     });
+
+    setupSearch();
 }
 
 map.on('load', startApp);

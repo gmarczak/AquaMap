@@ -12,3 +12,18 @@ export async function fetchPlaces() {
     }
     return data;
 }
+
+export async function fetchSchedule(placeId) {
+    const { data, error } = await supabase
+        .from('harmonogram_torow')
+        .select('*')
+        .eq('place_id', placeId)
+        .order('tor', { ascending: true })
+        .order('godzina_od', { ascending: true });
+
+    if (error) {
+        console.error('Error fetching schedule from Supabase:', error);
+        return [];
+    }
+    return data;
+}

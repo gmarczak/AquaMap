@@ -18,6 +18,8 @@ body {
 #content {
     display: flex;
     flex: 1;
+    overflow: hidden;
+    min-height: 0;
 }
 
 #sidebar {
@@ -27,12 +29,29 @@ body {
     overflow-y: auto;
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     z-index: 1;
+    min-height: 0;
 }
 
 #places-list {
     list-style: none;
     padding: 0;
     margin: 0;
+}
+
+#search-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: sans-serif;
+}
+
+#search-input:focus {
+    outline: none;
+    border-color: #2c3e50;
 }
 
 .place-item {
@@ -81,6 +100,139 @@ body {
 .detail-card p {
     margin: 8px 0;
     font-size: 14px;
+}
+
+.detail-card a {
+    color: #2980b9;
+    word-break: break-all;
+}
+
+/* Harmonogram torów */
+
+.harmonogram-tytul {
+    margin: 20px 0 10px;
+    font-size: 15px;
+    color: #2c3e50;
+}
+
+.harmonogram-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.dzien-tab {
+    padding: 5px 10px;
+    font-size: 12px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.dzien-tab:hover {
+    background: #f0f0f0;
+}
+
+.dzien-tab.active {
+    background: #2c3e50;
+    color: white;
+    border-color: #2c3e50;
+}
+
+.harmonogram-scroll {
+    /* zachowane dla kompatybilności, już nieużywane przez nowy układ */
+}
+
+.tory-lista {
+    margin-top: 2px;
+}
+
+.tor-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.tor-label {
+    width: 42px;
+    flex-shrink: 0;
+    font-size: 11px;
+    color: #555;
+}
+
+.tor-track {
+    position: relative;
+    flex: 1;
+    height: 20px;
+    background: #d5f5e3;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.segment {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.os-czasu {
+    margin-bottom: 6px;
+}
+
+.os-track {
+    height: 14px;
+    background: none;
+}
+
+.godzina-znacznik {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: #aaa;
+}
+
+.sekcja-naglowek {
+    font-size: 12px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin: 10px 0 4px;
+}
+
+.sekcja-naglowek:first-child {
+    margin-top: 0;
+}
+
+.harmonogram-legenda {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    color: #666;
+}
+
+.legenda-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.legenda-kolor {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+}
+
+.harmonogram-brak {
+    font-size: 13px;
+    color: #888;
+    font-style: italic;
 }
 
 @media (max-width: 768px) {
