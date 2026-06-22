@@ -16,7 +16,7 @@ export function initMap(containerId) {
 
     map.addControl(new mapboxgl.GeolocateControl({
         //I want smaller zoom
-        zoom: 13,
+        zoom: 35,
         positionOptions: { enableHighAccuracy: true },
         trackUserLocation: true,
         showUserHeading: true
