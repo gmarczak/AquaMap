@@ -1,138 +1,144 @@
 import { escapeHtml } from './utils.js';
 
-const DNI = [
-    { key: 'pon', label: 'Pon' },
-    { key: 'wt', label: 'Wt' },
-    { key: 'sr', label: 'Śr' },
-    { key: 'czw', label: 'Czw' },
-    { key: 'pt', label: 'Pt' },
-    { key: 'sob', label: 'Sob' },
-    { key: 'nd', label: 'Nd' }
-];
+// ISO: 1 = poniedziałek ... 7 = niedziela
+const DNI_SKROT = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd'];
 
-// Zakres wizualizowanego dnia — pasuje do godzin otwarcia większości basenów.
-const DZIEN_OD = 6 * 60;
-const DZIEN_DO = 23 * 60;
-const ZAKRES = DZIEN_DO - DZIEN_OD;
-const ZNACZNIKI_GODZIN = [6, 9, 12, 15, 18, 21];
-
-const STATUS_META = {
-    wolny: { label: 'Wolny', kolor: '#d5f5e3' },
-    zajecia: { label: 'Zajęcia grupowe', kolor: '#fdebd0' },
-    klub: { label: 'Trening klubowy', kolor: '#d6eaf8' },
-    zamkniety: { label: 'Niedostępny', kolor: '#eaeded' }
-};
-
-function naMinuty(czas) {
-    const [h, m] = czas.split(':').map(Number);
-    return h * 60 + (m || 0);
+function isoDzienDzis() {
+    return ((new Date().getDay() + 6) % 7) + 1;
 }
 
-function naProcent(minuty) {
-    const ograniczone = Math.min(Math.max(minuty, DZIEN_OD), DZIEN_DO);
-    return ((ograniczone - DZIEN_OD) / ZAKRES) * 100;
+function naMinuty(hhmm) {
+    const [h, m] = String(hhmm).split(':').map(Number);
+    return (h || 0) * 60 + (m || 0);
 }
 
-function skrocCzas(czas) {
-    return czas.slice(0, 5);
+// Tory sortujemy numerycznie ("Tor 1".."Tor 6"), a etykiety bez numeru
+// (np. "grzybek") lądują na końcu.
+function sortTory(a, b) {
+    const na = parseInt((a.match(/\d+/) || ['9999'])[0], 10);
+    const nb = parseInt((b.match(/\d+/) || ['9999'])[0], 10);
+    if (na !== nb) return na - nb;
+    return a.localeCompare(b, 'pl');
 }
 
-function narysujTor(tor, wpisyTegoToru) {
-    const segmenty = wpisyTegoToru
-        .filter(w => w.status !== 'wolny')
-        .map(w => {
-            const start = naProcent(naMinuty(w.godzina_od));
-            const koniec = naProcent(naMinuty(w.godzina_do));
-            const meta = STATUS_META[w.status] || STATUS_META.wolny;
-            const tytul = `Tor ${tor}, ${skrocCzas(w.godzina_od)}–${skrocCzas(w.godzina_do)} — ${meta.label}${w.opis ? ' · ' + w.opis : ''}`;
-            return `<div class="segment" title="${escapeHtml(tytul)}" style="left:${start}%; width:${koniec - start}%; background:${meta.kolor};"></div>`;
-        }).join('');
+// Renderuje harmonogram torów do kontenera DOM.
+// sloty: znormalizowane wiersze { dzien, sekcja, tor, od, do, opis } — w bazie
+//   zapisane są wyłącznie sloty ZAJĘTE; reszta osi to czas wolny.
+export function renderScheduleTable(container, sloty) {
+    // Zakres godzin osi: od najwcześniejszego początku do najpóźniejszego końca
+    // (zaokrąglony do pełnych godzin), z rozsądnym fallbackiem 6–22.
+    const czasy = sloty.flatMap(s => [naMinuty(s.od), naMinuty(s.do)]);
+    const minStart = czasy.length ? Math.min(...czasy) : 6 * 60;
+    const maxEnd = czasy.length ? Math.max(...czasy) : 22 * 60;
+    const OD = Math.floor(minStart / 60) * 60;
+    const DO = Math.max(Math.ceil(maxEnd / 60) * 60, OD + 60);
+    const ZAKRES = DO - OD;
 
-    return `
-        <div class="tor-row">
-            <div class="tor-label">Tor ${tor}</div>
-            <div class="tor-track">${segmenty}</div>
-        </div>
-    `;
-}
+    const procent = min => ((Math.min(Math.max(min, OD), DO) - OD) / ZAKRES) * 100;
 
-// Renderuje harmonogram torów do podanego kontenera DOM.
-// harmonogram: wiersze z tabeli "harmonogram_torow" dla jednego basenu
-//   (opcjonalne pole "sekcja", np. "Mała niecka" / "Duża niecka")
-// liczbaTorow: ile torów ma basen, używane gdy harmonogram nie ma jeszcze wpisów
-export function renderScheduleTable(container, harmonogram, liczbaTorow = 6) {
-    let aktywnyDzien = 'pon';
-
-    const sekcje = Array.from(new Set(harmonogram.map(w => w.sekcja || null)));
-    const maSekcje = sekcje.length > 1 || (sekcje.length === 1 && sekcje[0] !== null);
-
-    function listaTorowDlaSekcji(sekcja) {
-        const tory = new Set(
-            harmonogram.filter(w => (w.sekcja || null) === sekcja).map(w => w.tor)
-        );
-        if (tory.size === 0) {
-            for (let i = 1; i <= liczbaTorow; i++) tory.add(i);
-        }
-        return Array.from(tory).sort((a, b) => a - b);
+    // Znaczniki godzin — krok tak dobrany, by było ~4–7 etykiet.
+    const godzin = ZAKRES / 60;
+    const krok = godzin <= 7 ? 1 : godzin <= 14 ? 2 : 3;
+    const znaczniki = [];
+    for (let h = OD / 60; h <= DO / 60; h += krok) {
+        znaczniki.push(h);
     }
 
-    function narysuj() {
-        const wierszeDnia = harmonogram.filter(w => w.dzien_tygodnia === aktywnyDzien);
+    const sekcje = Array.from(new Set(sloty.map(s => s.sekcja).filter(Boolean)));
+    const maSekcje = sekcje.length > 0;
+    let aktywnaSekcja = maSekcje ? sekcje[0] : null;
 
-        const zakladki = DNI.map(d => `
-            <button type="button" class="dzien-tab ${d.key === aktywnyDzien ? 'active' : ''}" data-dzien="${d.key}">${d.label}</button>
+    // Domyślnie pokazujemy dziś, ale jeśli brak danych na dziś — pierwszy dzień z danymi.
+    const dniZDanymi = new Set(sloty.map(s => s.dzien));
+    let aktywnyDzien = dniZDanymi.has(isoDzienDzis())
+        ? isoDzienDzis()
+        : (Math.min(...dniZDanymi) || isoDzienDzis());
+
+    function toryDlaSekcji(sekcja) {
+        const tory = new Set(
+            sloty.filter(s => s.sekcja === sekcja).map(s => s.tor)
+        );
+        return Array.from(tory).sort(sortTory);
+    }
+
+    function etykietaDnia(dzien, idx) {
+        const dzis = isoDzienDzis();
+        const jutro = (dzis % 7) + 1;
+        if (dzien === dzis) return 'Dziś';
+        if (dzien === jutro) return 'Jutro';
+        return DNI_SKROT[dzien - 1];
+    }
+
+    function rysujTor(tor) {
+        const wpisy = sloty.filter(s =>
+            s.dzien === aktywnyDzien && s.tor === tor && s.sekcja === aktywnaSekcja
+        );
+
+        const bloki = wpisy.map(w => {
+            const left = procent(naMinuty(w.od));
+            const width = procent(naMinuty(w.do)) - left;
+            const tytul = `${w.tor}, ${w.od}–${w.do} — ${w.opis}`;
+            return `<div class="hs-busy" title="${escapeHtml(tytul)}" style="left:${left}%;width:${width}%;"></div>`;
+        }).join('');
+
+        return `
+            <div class="hs-lane">
+                <div class="hs-lane-label">${escapeHtml(tor)}</div>
+                <div class="hs-lane-track">${bloki}</div>
+            </div>
+        `;
+    }
+
+    function rysuj() {
+        const dni = Array.from(dniZDanymi).sort((a, b) => a - b);
+
+        const tabyDni = dni.map((d, i) => `
+            <button type="button" class="hs-tab ${d === aktywnyDzien ? 'active' : ''}" data-dzien="${d}">${escapeHtml(etykietaDnia(d, i))}</button>
         `).join('');
 
-        const znaczniki = ZNACZNIKI_GODZIN.map(h =>
-            `<span class="godzina-znacznik" style="left:${naProcent(h * 60)}%;">${h}</span>`
+        const segmenty = maSekcje ? `
+            <div class="hs-sections">
+                ${sekcje.map(s => {
+                    const n = toryDlaSekcji(s).length;
+                    return `<button type="button" class="hs-section-btn ${s === aktywnaSekcja ? 'active' : ''}" data-sekcja="${escapeHtml(s)}">${escapeHtml(s)} (${n})</button>`;
+                }).join('')}
+            </div>
+        ` : '';
+
+        const osZnaczniki = znaczniki.map(h =>
+            `<span class="hs-axis-mark" style="left:${procent(h * 60)}%;">${String(h).padStart(2, '0')}:00</span>`
         ).join('');
 
-        const osCzasu = `
-            <div class="tor-row os-czasu">
-                <div class="tor-label"></div>
-                <div class="tor-track os-track">${znaczniki}</div>
-            </div>
-        `;
-
-        let trescTorow;
-        if (maSekcje) {
-            trescTorow = sekcje.map(sekcja => {
-                const tory = listaTorowDlaSekcji(sekcja);
-                const wiersze = tory.map(tor => {
-                    const wpisyToru = wierszeDnia.filter(w => w.tor === tor && (w.sekcja || null) === sekcja);
-                    return narysujTor(tor, wpisyToru);
-                }).join('');
-                return `
-                    <div class="sekcja-naglowek">${escapeHtml(sekcja || 'Tory')}</div>
-                    ${wiersze}
-                `;
-            }).join('');
-        } else {
-            const tory = listaTorowDlaSekcji(null);
-            trescTorow = tory.map(tor => {
-                const wpisyToru = wierszeDnia.filter(w => w.tor === tor);
-                return narysujTor(tor, wpisyToru);
-            }).join('');
-        }
+        const tory = maSekcje ? toryDlaSekcji(aktywnaSekcja) : toryDlaSekcji(null);
+        const wiersze = tory.map(rysujTor).join('');
 
         container.innerHTML = `
-            <div class="harmonogram-tabs">${zakladki}</div>
-            ${osCzasu}
-            <div class="tory-lista">${trescTorow}</div>
-            <div class="harmonogram-legenda">
-                ${Object.entries(STATUS_META).map(([key, m]) => `
-                    <span class="legenda-item"><span class="legenda-kolor" style="background:${m.kolor};"></span>${m.label}</span>
-                `).join('')}
+            <div class="hs-tabs">${tabyDni}</div>
+            ${segmenty}
+            <div class="hs-timeline">
+                <div class="hs-axis"><span class="hs-axis-spacer"></span><div class="hs-axis-track">${osZnaczniki}</div></div>
+                ${wiersze}
+            </div>
+            <div class="hs-legend">
+                <span class="hs-legend-item"><span class="hs-dot hs-dot-free"></span>Wolny</span>
+                <span class="hs-legend-item"><span class="hs-dot hs-dot-busy"></span>Zajęty</span>
             </div>
         `;
 
-        container.querySelectorAll('.dzien-tab').forEach(btn => {
+        container.querySelectorAll('.hs-tab').forEach(btn => {
             btn.addEventListener('click', () => {
-                aktywnyDzien = btn.dataset.dzien;
-                narysuj();
+                aktywnyDzien = Number(btn.dataset.dzien);
+                rysuj();
+            });
+        });
+
+        container.querySelectorAll('.hs-section-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                aktywnaSekcja = btn.dataset.sekcja;
+                rysuj();
             });
         });
     }
 
-    narysuj();
+    rysuj();
 }

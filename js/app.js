@@ -3,7 +3,6 @@ import { fetchPlaces, fetchSchedule } from './database.js';
 import { renderScheduleTable } from './schedule.js';
 import { isOpenNow } from './openingHours.js';
 import { distanceKm } from './geo.js';
-import { safeUrl } from './utils.js';
 
 initMap('map');
 
@@ -25,30 +24,70 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Cennik bywa zapisany jako kilka linijek (np. "Bilet 1h: 22 zł\nKarnet: 65 zł").
-// Renderujemy to jako listę zamiast zlepiać w jeden ciąg tekstu.
-function renderCennik(cennik) {
-    if (!cennik || cennik === 'Brak') {
-        return '<p><strong>💰 Cennik:</strong> Brak</p>';
+const UDOGODNIENIA_META = {
+    parking: '🅿️ Parking',
+    gym: '🏋️ Siłownia',
+    jacuzzi: '🛁 Jacuzzi',
+    sauna: '🧖 Sauna',
+    lockers: '🔐 Szafki',
+    kids_pool: '🧒 Brodzik'
+};
+
+const TRUDNOSC_META = {
+    easy: 'Łatwy',
+    medium: 'Średni',
+    hard: 'Trudny',
+    legendary: 'Legendarny'
+};
+
+// Godziny otwarcia bywają puste w bazie — wtedy wyliczamy widełki z najwcześniejszego
+// początku i najpóźniejszego końca slotów w harmonogramie.
+function godzinyZHarmonogramu(sloty) {
+    const czasy = sloty.flatMap(s => [s.od, s.do]).filter(Boolean);
+    if (czasy.length === 0) {
+        return null;
+    }
+    const od = czasy.reduce((a, b) => (a < b ? a : b));
+    const doG = czasy.reduce((a, b) => (a > b ? a : b));
+    return `${od} - ${doG}`;
+}
+
+function renderChipy(place, godziny) {
+    const chipy = [];
+
+    if (godziny) {
+        chipy.push(`<span class="chip chip-time">🕒 ${escapeHtml(godziny)}</span>`);
+
+        const otwarte = isOpenNow(godziny);
+        if (otwarte !== null) {
+            chipy.push(otwarte
+                ? '<span class="chip chip-open">Otwarte</span>'
+                : '<span class="chip chip-closed">Zamknięte</span>');
+        }
     }
 
-    const linie = cennik.split('\n').map(l => l.trim()).filter(Boolean);
-
-    if (linie.length <= 1) {
-        return `<p><strong>💰 Cennik:</strong> ${escapeHtml(cennik)}</p>`;
+    if (place.dlugosc) {
+        chipy.push(`<span class="chip">🏊 ${escapeHtml(place.dlugosc)} m</span>`);
+    }
+    if (place.trudnosc && TRUDNOSC_META[place.trudnosc]) {
+        chipy.push(`<span class="chip">${escapeHtml(TRUDNOSC_META[place.trudnosc])}</span>`);
     }
 
-    const pozycje = linie.map(linia => {
-        const [etykieta, ...reszta] = linia.split(':');
-        const wartosc = reszta.join(':').trim();
-        return wartosc
-            ? `<li><span class="cennik-etykieta">${escapeHtml(etykieta.trim())}</span><span class="cennik-wartosc">${escapeHtml(wartosc)}</span></li>`
-            : `<li>${escapeHtml(linia)}</li>`;
-    }).join('');
+    return `<div class="detail-chips">${chipy.join('')}</div>`;
+}
 
+function renderUdogodnienia(udogodnienia) {
+    if (!udogodnienia || udogodnienia.length === 0) {
+        return '';
+    }
+    const items = udogodnienia
+        .map(a => `<span class="amenity">${escapeHtml(UDOGODNIENIA_META[a] || a)}</span>`)
+        .join('');
     return `
-        <strong>💰 Cennik:</strong>
-        <ul class="cennik-lista">${pozycje}</ul>
+        <div class="detail-section">
+            <h4 class="section-title">Udogodnienia</h4>
+            <div class="amenity-list">${items}</div>
+        </div>
     `;
 }
 
@@ -57,31 +96,37 @@ async function showDetails(place) {
     document.getElementById('details-view').classList.remove('hidden');
 
     const content = document.getElementById('details-content');
-    const stronaUrl = place.strona && place.strona !== 'Brak' ? safeUrl(place.strona) : null;
-    const stronaHtml = stronaUrl
-        ? `<a href="${escapeHtml(stronaUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(place.strona)}</a>`
-        : 'Brak';
+    content.innerHTML = `
+        <div class="detail-card">
+            <h3 class="detail-title">${escapeHtml(place.nazwa)}</h3>
+            <div class="detail-chips"><span class="chip chip-muted">Wczytywanie…</span></div>
+            <div class="detail-section">
+                <h4 class="section-title">Harmonogram</h4>
+                <div id="harmonogram-container" class="harmonogram-loading">Wczytywanie harmonogramu…</div>
+            </div>
+        </div>
+    `;
+
+    const sloty = await fetchSchedule(place.id);
+    const godziny = place.godziny || godzinyZHarmonogramu(sloty);
 
     content.innerHTML = `
         <div class="detail-card">
-            <h3>${escapeHtml(place.nazwa)}</h3>
-            <p><strong>🕒 Godziny:</strong> ${escapeHtml(place.godziny)}</p>
-            <div class="cennik-blok">${renderCennik(place.cennik)}</div>
-            <p><strong>⭐ Ocena:</strong> ${escapeHtml(place.ocena)}</p>
-            <p><strong>🏆 Klub:</strong> ${escapeHtml(place.klub)}</p>
-            <p><strong>🔗 Strona:</strong> ${stronaHtml}</p>
-            <h4 class="harmonogram-tytul">Harmonogram torów</h4>
-            <div id="harmonogram-container">Wczytywanie harmonogramu...</div>
+            <h3 class="detail-title">${escapeHtml(place.nazwa)}</h3>
+            ${renderChipy(place, godziny)}
+            <div class="detail-section">
+                <h4 class="section-title">Harmonogram</h4>
+                <div id="harmonogram-container"></div>
+            </div>
+            ${renderUdogodnienia(place.udogodnienia)}
         </div>
     `;
 
     const harmonogramContainer = document.getElementById('harmonogram-container');
-    const harmonogram = await fetchSchedule(place.id);
-
-    if (harmonogram.length === 0) {
+    if (sloty.length === 0) {
         harmonogramContainer.innerHTML = '<p class="harmonogram-brak">Brak danych o harmonogramie dla tego basenu.</p>';
     } else {
-        renderScheduleTable(harmonogramContainer, harmonogram, place.liczba_torow || 6);
+        renderScheduleTable(harmonogramContainer, sloty);
     }
 }
 

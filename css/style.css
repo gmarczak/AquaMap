@@ -117,14 +117,21 @@ body {
     background-color: #d0d0d0;
 }
 
-.detail-card h3 {
-    margin-top: 0;
-    color: #2c3e50;
+/* Karta szczegółów basenu */
+
+.detail-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
-.detail-card p {
-    margin: 8px 0;
-    font-size: 14px;
+.detail-title {
+    margin: 0 0 12px;
+    color: #1c2733;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.2;
 }
 
 .detail-card a {
@@ -132,163 +139,74 @@ body {
     word-break: break-all;
 }
 
-.cennik-blok {
-    margin: 8px 0;
-    font-size: 14px;
-}
-
-.cennik-lista {
-    list-style: none;
-    margin: 6px 0 0;
-    padding: 0;
-    border: 1px solid #eaeaea;
-    border-radius: 6px;
-    overflow: hidden;
-}
-
-.cennik-lista li {
+.detail-chips {
     display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 6px 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 11px;
+    border-radius: 999px;
     font-size: 13px;
-}
-
-.cennik-lista li:nth-child(odd) {
-    background-color: #f8f9fa;
-}
-
-.cennik-etykieta {
-    color: #555;
-}
-
-.cennik-wartosc {
     font-weight: 600;
-    color: #2c3e50;
-    text-align: right;
+    background: #f1f3f5;
+    color: #344;
     white-space: nowrap;
 }
 
-/* Harmonogram torów */
+.chip-time {
+    background: #eef1f4;
+    color: #344;
+}
 
-.harmonogram-tytul {
-    margin: 20px 0 10px;
+.chip-open {
+    background: #e3f9ec;
+    color: #1a8a4b;
+}
+
+.chip-closed {
+    background: #fdecec;
+    color: #c0392b;
+}
+
+.chip-muted {
+    background: #f1f3f5;
+    color: #99a;
+}
+
+.detail-section {
+    margin-top: 20px;
+}
+
+.section-title {
+    margin: 0 0 10px;
     font-size: 15px;
-    color: #2c3e50;
+    font-weight: 700;
+    color: #1c2733;
 }
 
-.harmonogram-tabs {
+.amenity-list {
     display: flex;
-    gap: 4px;
-    margin-bottom: 10px;
     flex-wrap: wrap;
-}
-
-.dzien-tab {
-    padding: 5px 10px;
-    font-size: 12px;
-    border: 1px solid #ddd;
-    background: white;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.dzien-tab:hover {
-    background: #f0f0f0;
-}
-
-.dzien-tab.active {
-    background: #2c3e50;
-    color: white;
-    border-color: #2c3e50;
-}
-
-.harmonogram-scroll {
-    /* zachowane dla kompatybilności, już nieużywane przez nowy układ */
-}
-
-.tory-lista {
-    margin-top: 2px;
-}
-
-.tor-row {
-    display: flex;
-    align-items: center;
     gap: 8px;
-    margin-bottom: 4px;
 }
 
-.tor-label {
-    width: 42px;
-    flex-shrink: 0;
-    font-size: 11px;
-    color: #555;
+.amenity {
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: #f1f3f5;
+    color: #455;
+    font-size: 13px;
 }
 
-.tor-track {
-    position: relative;
-    flex: 1;
-    height: 20px;
-    background: #d5f5e3;
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.segment {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    border-right: 1px solid rgba(255, 255, 255, 0.6);
-}
-
-.os-czasu {
-    margin-bottom: 6px;
-}
-
-.os-track {
-    height: 14px;
-    background: none;
-}
-
-.godzina-znacznik {
-    position: absolute;
-    top: 0;
-    transform: translateX(-50%);
-    font-size: 10px;
-    color: #aaa;
-}
-
-.sekcja-naglowek {
-    font-size: 12px;
-    font-weight: bold;
-    color: #2c3e50;
-    margin: 10px 0 4px;
-}
-
-.sekcja-naglowek:first-child {
-    margin-top: 0;
-}
-
-.harmonogram-legenda {
-    display: flex;
-    gap: 12px;
-    margin-top: 10px;
-    flex-wrap: wrap;
-    font-size: 11px;
-    color: #666;
-}
-
-.legenda-item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.legenda-kolor {
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-    display: inline-block;
+.harmonogram-loading {
+    font-size: 13px;
+    color: #99a;
 }
 
 .harmonogram-brak {
@@ -301,6 +219,160 @@ body {
     font-size: 13px;
     color: #b00020;
     padding: 8px 0;
+}
+
+/* Harmonogram torów — oś czasu */
+
+.hs-tabs {
+    display: flex;
+    gap: 6px;
+    background: #f1f3f5;
+    padding: 4px;
+    border-radius: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.hs-tab {
+    flex: 1 0 auto;
+    padding: 8px 14px;
+    border: none;
+    background: transparent;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #5a6b7b;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.hs-tab:hover {
+    color: #1c2733;
+}
+
+.hs-tab.active {
+    background: #2f6fed;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(47, 111, 237, 0.35);
+}
+
+.hs-sections {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    background: #f1f3f5;
+    padding: 4px;
+    border-radius: 12px;
+}
+
+.hs-section-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #5a6b7b;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.hs-section-btn.active {
+    background: #fff;
+    color: #1c2733;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.hs-timeline {
+    margin-top: 14px;
+}
+
+.hs-axis {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.hs-axis-spacer {
+    width: 46px;
+    flex-shrink: 0;
+}
+
+.hs-axis-track {
+    position: relative;
+    flex: 1;
+    height: 14px;
+}
+
+.hs-axis-mark {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: #9aa7b2;
+    white-space: nowrap;
+}
+
+.hs-lane {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.hs-lane-label {
+    width: 46px;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #5a6b7b;
+}
+
+.hs-lane-track {
+    position: relative;
+    flex: 1;
+    height: 18px;
+    background: #34c759;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.hs-busy {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: #ff3b30;
+}
+
+.hs-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: #5a6b7b;
+}
+
+.hs-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.hs-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+.hs-dot-free {
+    background: #34c759;
+}
+
+.hs-dot-busy {
+    background: #ff3b30;
 }
 
 @media (max-width: 768px) {
