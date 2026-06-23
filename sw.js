@@ -1,4 +1,4 @@
-const STATIC_CACHE_NAME = 'aquamap-static-v2';
+const STATIC_CACHE_NAME = 'aquamap-static-v3';
 const DATA_CACHE_NAME = 'aquamap-data-v1';
 const CDN_CACHE_NAME = 'aquamap-cdn-v1';
 
@@ -8,6 +8,7 @@ const APP_SHELL = [
 	'/css/style.css',
 	'/js/app.js',
 	'/js/config.js',
+	'/js/utils.js',
 	'/js/database.js',
 	'/js/map.js',
 	'/js/schedule.js',

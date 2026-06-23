@@ -1,6 +1,7 @@
 import { initMap, addMarker, flyToLocation, map } from './map.js';
 import { fetchPlaces, fetchSchedule } from './database.js';
 import { renderScheduleTable } from './schedule.js';
+import { escapeHtml, safeUrl } from './utils.js';
 
 initMap('map');
 
@@ -9,14 +10,19 @@ async function showDetails(place) {
     document.getElementById('details-view').classList.remove('hidden');
 
     const content = document.getElementById('details-content');
+    const stronaUrl = place.strona && place.strona !== 'Brak' ? safeUrl(place.strona) : null;
+    const stronaHtml = stronaUrl
+        ? `<a href="${escapeHtml(stronaUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(place.strona)}</a>`
+        : 'Brak';
+
     content.innerHTML = `
         <div class="detail-card">
-            <h3>${place.nazwa}</h3>
-            <p><strong>🕒 Godziny:</strong> ${place.godziny}</p>
-            <p><strong>💰 Cennik:</strong> ${place.cennik}</p>
-            <p><strong>⭐ Ocena:</strong> ${place.ocena}</p>
-            <p><strong>🏆 Klub:</strong> ${place.klub}</p>
-            <p><strong>🔗 Strona:</strong> ${place.strona && place.strona !== 'Brak' ? `<a href="${place.strona}" target="_blank" rel="noopener">${place.strona}</a>` : 'Brak'}</p>
+            <h3>${escapeHtml(place.nazwa)}</h3>
+            <p><strong>🕒 Godziny:</strong> ${escapeHtml(place.godziny)}</p>
+            <p><strong>💰 Cennik:</strong> ${escapeHtml(place.cennik)}</p>
+            <p><strong>⭐ Ocena:</strong> ${escapeHtml(place.ocena)}</p>
+            <p><strong>🏆 Klub:</strong> ${escapeHtml(place.klub)}</p>
+            <p><strong>🔗 Strona:</strong> ${stronaHtml}</p>
             <h4 class="harmonogram-tytul">Harmonogram torów</h4>
             <div id="harmonogram-container">Wczytywanie harmonogramu...</div>
         </div>
@@ -53,11 +59,23 @@ function setupSearch() {
 
 async function startApp() {
     const listElement = document.getElementById('places-list');
-    const places = await fetchPlaces();
+
+    document.getElementById('back-button').addEventListener('click', showList);
+
+    let places;
+    try {
+        places = await fetchPlaces();
+    } catch {
+        listElement.innerHTML = '<li class="places-info places-error">Nie udało się wczytać danych. Sprawdź połączenie i odśwież stronę.</li>';
+        return;
+    }
 
     listElement.innerHTML = '';
 
-    document.getElementById('back-button').addEventListener('click', showList);
+    if (places.length === 0) {
+        listElement.innerHTML = '<li class="places-info">Brak basenów do wyświetlenia.</li>';
+        return;
+    }
 
     places.forEach(place => {
         addMarker(place, () => showDetails(place));

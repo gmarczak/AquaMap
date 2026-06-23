@@ -65,6 +65,16 @@ body {
     background-color: #eaeaea;
 }
 
+.places-info {
+    padding: 12px 10px;
+    color: #555;
+    list-style: none;
+}
+
+.places-error {
+    color: #c0392b;
+}
+
 #map {
     flex: 1;
     background-color: #dcdcdc;

@@ -1,4 +1,5 @@
 import { MAPBOX_ACCESS_TOKEN } from './config.js';
+import { escapeHtml } from './utils.js';
 
 export let map;
 
@@ -6,7 +7,7 @@ export function initMap(containerId) {
     mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN
 
     map = new mapboxgl.Map({
-        container: 'map', // container ID
+        container: containerId, // container ID
         style: 'mapbox://styles/mapbox/streets-v11', // style URL
         center: [19.1451, 51.9194], // starting position [lng, lat]
         zoom: 5.5 // starting zoom
@@ -15,8 +16,8 @@ export function initMap(containerId) {
     map.addControl(new mapboxgl.NavigationControl());
 
     map.addControl(new mapboxgl.GeolocateControl({
-        //I want smaller zoom
-        zoom: 35,
+        // Ogranicz docelowe przybliżenie po geolokalizacji (zamiast maksymalnego).
+        fitBoundsOptions: { maxZoom: 14 },
         positionOptions: { enableHighAccuracy: true },
         trackUserLocation: true,
         showUserHeading: true
@@ -26,7 +27,7 @@ export function initMap(containerId) {
 }
 
 export function addMarker(place, onMarkerClick) {
-    const popupContent = `<h3 style="margin: 0; font-size: 13px;">${place.nazwa}</h3>`;
+    const popupContent = `<h3 style="margin: 0; font-size: 13px;">${escapeHtml(place.nazwa)}</h3>`;
 
     const marker = new mapboxgl.Marker()
         .setLngLat([place.lng, place.lat])

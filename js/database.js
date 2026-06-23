@@ -8,9 +8,9 @@ export async function fetchPlaces() {
 
     if (error) {
         console.error('Error fetching data from Supabase:', error);
-        return [];
+        throw error;
     }
-    return data;
+    return data ?? [];
 }
 
 export async function fetchSchedule(placeId) {

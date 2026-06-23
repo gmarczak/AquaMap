@@ -1,3 +1,5 @@
+import { escapeHtml } from './utils.js';
+
 const DNI = [
     { key: 'pon', label: 'Pon' },
     { key: 'wt', label: 'Wt' },
@@ -43,7 +45,7 @@ function narysujTor(tor, wpisyTegoToru) {
             const koniec = naProcent(naMinuty(w.godzina_do));
             const meta = STATUS_META[w.status] || STATUS_META.wolny;
             const tytul = `Tor ${tor}, ${skrocCzas(w.godzina_od)}–${skrocCzas(w.godzina_do)} — ${meta.label}${w.opis ? ' · ' + w.opis : ''}`;
-            return `<div class="segment" title="${tytul}" style="left:${start}%; width:${koniec - start}%; background:${meta.kolor};"></div>`;
+            return `<div class="segment" title="${escapeHtml(tytul)}" style="left:${start}%; width:${koniec - start}%; background:${meta.kolor};"></div>`;
         }).join('');
 
     return `
@@ -101,7 +103,7 @@ export function renderScheduleTable(container, harmonogram, liczbaTorow = 6) {
                     return narysujTor(tor, wpisyToru);
                 }).join('');
                 return `
-                    <div class="sekcja-naglowek">${sekcja || 'Tory'}</div>
+                    <div class="sekcja-naglowek">${escapeHtml(sekcja || 'Tory')}</div>
                     ${wiersze}
                 `;
             }).join('');
