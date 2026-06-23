@@ -10,6 +10,7 @@ initMap('map');
 let allPlaces = [];
 let userLocation = null;
 let openNowOnly = false;
+const placeItems = new Map();
 
 function waitForMapLoad() {
     return new Promise(resolve => {
@@ -181,6 +182,21 @@ function setActivePlace(activeItem) {
     }
 }
 
+// Wspólna ścieżka wyboru basenu (z listy i z markera na mapie): podświetla
+// pozycję na liście, przewija ją do widoku i otwiera szczegóły.
+function selectPlace(place) {
+    const item = placeItems.get(place.id);
+    setActivePlace(item);
+    item?.scrollIntoView({ block: 'nearest' });
+    showDetails(place);
+}
+
+function renderSkeleton(listElement, count = 6) {
+    listElement.innerHTML = Array.from({ length: count }, () =>
+        '<li class="place-item skeleton"><span class="skel skel-title"></span><span class="skel skel-badge"></span></li>'
+    ).join('');
+}
+
 function setupSearch() {
     document.getElementById('search-input').addEventListener('input', applySearchFilter);
 }
@@ -215,11 +231,13 @@ function renderList() {
     }
 
     listElement.innerHTML = '';
+    placeItems.clear();
 
     places.forEach(place => {
         const listItem = document.createElement('li');
         listItem.classList.add('place-item');
         listItem.dataset.name = (place.nazwa || '').toLowerCase();
+        placeItems.set(place.id, listItem);
 
         const badge = [];
         if (!brak(place.ocena)) {
@@ -242,9 +260,8 @@ function renderList() {
         listItem.innerHTML = `<div class="place-name">${escapeHtml(place.nazwa)}</div>${meta}`;
 
         listItem.addEventListener('click', () => {
-            setActivePlace(listItem);
             flyToLocation(place.lat, place.lng);
-            showDetails(place);
+            selectPlace(place);
         });
 
         listElement.appendChild(listItem);
@@ -260,6 +277,7 @@ geolocateControl.on('geolocate', position => {
 
 async function startApp() {
     const listElement = document.getElementById('places-list');
+    renderSkeleton(listElement);
 
     try {
         [, allPlaces] = await Promise.all([waitForMapLoad(), fetchPlaces()]);
@@ -275,7 +293,7 @@ async function startApp() {
 
     document.getElementById('back-button').addEventListener('click', showList);
 
-    allPlaces.forEach(place => addMarker(place, () => showDetails(place)));
+    allPlaces.forEach(place => addMarker(place, () => selectPlace(place)));
 
     renderList();
     setupSearch();
