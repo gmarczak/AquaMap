@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 
 <head>
     <meta charset="UTF-8">
@@ -23,15 +23,24 @@
     <div id="content">
         <div id="sidebar">
             <div id="list-view">
-                <h2>Places</h2>
-                <input type="text" id="search-input" placeholder="Szukaj basenu...">
-                <label id="open-now-filter"><input type="checkbox" id="open-now-checkbox"> Tylko otwarte teraz</label>
+                <h2 class="list-title">Baseny</h2>
+                <div class="search-wrap">
+                    <span class="search-icon" aria-hidden="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </span>
+                    <input type="text" id="search-input" placeholder="Szukaj basenu...">
+                </div>
+                <label class="toggle">
+                    <input type="checkbox" id="open-now-checkbox">
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    <span class="toggle-label">Tylko otwarte teraz</span>
+                </label>
                 <ul id="places-list">
-                    <li>Ładowanie danych...</li>
+                    <li class="places-info">Ładowanie danych…</li>
                 </ul>
             </div>
             <div id="details-view" class="hidden">
-                <button id="back-button">&larr; Back to list</button>
+                <button id="back-button">&larr; Wstecz</button>
                 <div id="details-content">
                 </div>
             </div>

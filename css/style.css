@@ -1,18 +1,44 @@
+:root {
+    --accent: #2f6fed;
+    --accent-soft: rgba(47, 111, 237, 0.12);
+    --ink: #1c2733;
+    --muted: #5a6b7b;
+    --bg: #eef1f5;
+    --surface: #ffffff;
+    --line: #e6eaee;
+    --header: #2c3e50;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
     padding: 0;
     height: 100vh;
     display: flex;
     flex-direction: column;
-    font-family: sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
 }
 
 #header {
-    padding: 15px;
-    background-color: #2c3e50;
-    color: white;
+    padding: 14px;
+    background-color: var(--header);
+    color: #fff;
     text-align: center;
-    font-weight: bold;
+}
+
+#header h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
 }
 
 #offline-banner {
@@ -23,13 +49,6 @@ body {
     font-size: 13px;
 }
 
-#open-now-filter {
-    display: block;
-    font-size: 13px;
-    margin: 8px 0;
-    cursor: pointer;
-}
-
 #content {
     display: flex;
     flex: 1;
@@ -38,51 +57,190 @@ body {
 }
 
 #sidebar {
-    width: 300px;
-    background-color: #f8f9fa;
-    padding: 15px;
+    width: 340px;
+    background-color: var(--bg);
+    padding: 16px;
     overflow-y: auto;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     z-index: 1;
     min-height: 0;
 }
+
+.list-title {
+    margin: 0 0 12px;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ink);
+}
+
+/* Wyszukiwarka */
+
+.search-wrap {
+    position: relative;
+    margin-bottom: 12px;
+}
+
+.search-icon {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9aa7b2;
+    pointer-events: none;
+    display: flex;
+}
+
+#search-input {
+    width: 100%;
+    padding: 11px 14px 11px 40px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--surface);
+    color: var(--ink);
+}
+
+#search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Przełącznik "tylko otwarte" */
+
+.toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 14px;
+    user-select: none;
+}
+
+.toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-track {
+    width: 40px;
+    height: 24px;
+    border-radius: 999px;
+    background: #cfd6dd;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s;
+}
+
+.toggle input:checked + .toggle-track {
+    background: var(--accent);
+}
+
+.toggle input:checked + .toggle-track .toggle-thumb {
+    transform: translateX(16px);
+}
+
+.toggle input:focus-visible + .toggle-track {
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Lista basenów */
 
 #places-list {
     list-style: none;
     padding: 0;
     margin: 0;
-}
-
-#search-input {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 8px 10px;
-    margin-bottom: 12px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 14px;
-    font-family: sans-serif;
-}
-
-#search-input:focus {
-    outline: none;
-    border-color: #2c3e50;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .place-item {
-    transition: background-color 0.2s;
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
     cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.05s;
 }
 
 .place-item:hover {
-    background-color: #eaeaea;
+    border-color: #cdd6df;
+    box-shadow: var(--shadow-sm);
+}
+
+.place-item:active {
+    transform: scale(0.995);
+}
+
+.place-item.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+}
+
+.place-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.place-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 7px;
+}
+
+.place-badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: #f1f3f5;
+    color: #455;
+}
+
+.badge-rating {
+    background: #fff6e0;
+    color: #9a6a00;
+}
+
+.badge-open {
+    background: #e3f9ec;
+    color: #1a8a4b;
+}
+
+.badge-closed {
+    background: #fdecec;
+    color: #c0392b;
+}
+
+.place-dist {
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: auto;
 }
 
 .places-info {
-    padding: 12px 10px;
-    color: #555;
+    padding: 12px 4px;
+    color: var(--muted);
     list-style: none;
 }
 
@@ -100,21 +258,24 @@ body {
 }
 
 #back-button {
-    padding: 12px;
-    background-color: #e0e0e0;
-    border: none;
-    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 999px;
     cursor: pointer;
-    font-weight: bold;
-    width: 100%;
-    text-align: center;
-    margin-bottom: 15px;
-    font-size: 16px;
-    transition: background-color 0.2s;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-sm);
+    transition: background 0.15s;
 }
 
 #back-button:hover {
-    background-color: #d0d0d0;
+    background: #f1f3f5;
 }
 
 /* Karta szczegółów basenu */
@@ -255,7 +416,7 @@ body {
 }
 
 .detail-card a {
-    color: #2f6fed;
+    color: var(--accent);
     word-break: break-all;
 }
 
@@ -311,7 +472,7 @@ body {
 }
 
 .hs-tab.active {
-    background: #2f6fed;
+    background: var(--accent);
     color: #fff;
     box-shadow: 0 2px 6px rgba(47, 111, 237, 0.35);
 }

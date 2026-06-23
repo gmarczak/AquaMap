@@ -169,9 +169,16 @@ function applySearchFilter() {
     const query = searchInput.value.trim().toLowerCase();
 
     /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.place-item')).forEach(item => {
-        const matches = item.textContent.toLowerCase().includes(query);
+        const matches = (item.dataset.name || '').includes(query);
         item.style.display = matches ? '' : 'none';
     });
+}
+
+function setActivePlace(activeItem) {
+    document.querySelectorAll('.place-item.active').forEach(el => el.classList.remove('active'));
+    if (activeItem) {
+        activeItem.classList.add('active');
+    }
 }
 
 function setupSearch() {
@@ -211,12 +218,31 @@ function renderList() {
 
     places.forEach(place => {
         const listItem = document.createElement('li');
-        listItem.textContent = userLocation
-            ? `${place.nazwa} (${distanceKm(userLocation.lat, userLocation.lng, place.lat, place.lng).toFixed(1)} km)`
-            : place.nazwa;
         listItem.classList.add('place-item');
+        listItem.dataset.name = (place.nazwa || '').toLowerCase();
+
+        const badge = [];
+        if (!brak(place.ocena)) {
+            badge.push(`<span class="place-badge badge-rating">⭐ ${escapeHtml(place.ocena)}</span>`);
+        }
+        const otwarte = isOpenNow(place.godziny);
+        if (otwarte === true) {
+            badge.push('<span class="place-badge badge-open">Otwarte</span>');
+        } else if (otwarte === false) {
+            badge.push('<span class="place-badge badge-closed">Zamknięte</span>');
+        }
+        const dystans = userLocation
+            ? `<span class="place-dist">${distanceKm(userLocation.lat, userLocation.lng, place.lat, place.lng).toFixed(1)} km</span>`
+            : '';
+
+        const meta = (badge.length || dystans)
+            ? `<div class="place-meta">${badge.join('')}${dystans}</div>`
+            : '';
+
+        listItem.innerHTML = `<div class="place-name">${escapeHtml(place.nazwa)}</div>${meta}`;
 
         listItem.addEventListener('click', () => {
+            setActivePlace(listItem);
             flyToLocation(place.lat, place.lng);
             showDetails(place);
         });
