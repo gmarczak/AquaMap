@@ -34,7 +34,7 @@ function naMinuty(hhmm) {
 // Renderuje harmonogram torów do kontenera DOM.
 // sloty: znormalizowane wiersze { dzien, sekcja, tor, od, do, status, opis }.
 // W bazie zapisane są sloty zajęte — rysujemy je na zielonym (wolnym) tle.
-export function renderScheduleTable(container, sloty) {
+export function renderScheduleTable(container, sloty, liczbaTorow = 0) {
     const zajete = sloty.filter(s => s.status !== 'wolny');
 
     // Zakres osi: od najwcześniejszego początku do najpóźniejszego końca
@@ -64,17 +64,22 @@ export function renderScheduleTable(container, sloty) {
         ? kluczDzis()
         : (dniZDanymi[0] || kluczDzis());
 
-    // Tory numerujemy od 1 do najwyższego numeru występującego w danych — dzięki
-    // temu tory bez żadnego zajętego slotu (np. Tor 3) i tak pokazują się jako
-    // w pełni wolne, zamiast znikać.
+    // Tory numerujemy od 1 do najwyższego numeru — dzięki temu tory bez żadnego
+    // zajętego slotu (np. Tor 3) i tak pokazują się jako w pełni wolne, zamiast
+    // znikać. Dla basenów bez podziału na sekcje podpieramy się liczba_torow,
+    // by pokazać też tory wyższe niż występują w danych (sekcji to nie dotyczy —
+    // liczba_torow nie rozróżnia niecek).
     function toryDlaSekcji(sekcja) {
         const numery = sloty
             .filter(s => s.sekcja === sekcja && Number.isFinite(s.tor))
             .map(s => s.tor);
-        if (numery.length === 0) {
+        let max = numery.length ? Math.max(...numery) : 0;
+        if (sekcja === null) {
+            max = Math.max(max, liczbaTorow);
+        }
+        if (max <= 0) {
             return [];
         }
-        const max = Math.max(...numery);
         return Array.from({ length: max }, (_, i) => i + 1);
     }
 

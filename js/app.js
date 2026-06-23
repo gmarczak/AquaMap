@@ -141,13 +141,21 @@ async function showDetails(place) {
     `;
 
     const harmonogramContainer = document.getElementById('harmonogram-container');
-    const sloty = await fetchSchedule(place.id);
+
+    let sloty;
+    try {
+        sloty = await fetchSchedule(place.id);
+    } catch {
+        harmonogramContainer.classList.remove('harmonogram-loading');
+        harmonogramContainer.innerHTML = '<p class="harmonogram-blad">Nie udało się wczytać harmonogramu. Sprawdź połączenie i spróbuj ponownie.</p>';
+        return;
+    }
 
     harmonogramContainer.classList.remove('harmonogram-loading');
     if (sloty.length === 0) {
         harmonogramContainer.innerHTML = '<p class="harmonogram-brak">Brak danych o harmonogramie dla tego basenu.</p>';
     } else {
-        renderScheduleTable(harmonogramContainer, sloty);
+        renderScheduleTable(harmonogramContainer, sloty, place.liczba_torow || 0);
     }
 }
 

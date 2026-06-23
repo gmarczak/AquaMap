@@ -46,12 +46,23 @@ describe('fetchPlaces', () => {
 });
 
 describe('fetchSchedule', () => {
-    it('returns an empty array when Supabase returns an error', async () => {
+    it('throws when Supabase returns an error', async () => {
         fromMock.mockReturnValue(queryReturning({ data: null, error: new Error('boom') }));
+
+        const { fetchSchedule } = await import('./database.js');
+
+        await expect(fetchSchedule(79)).rejects.toThrow('boom');
+    });
+
+    it('normalizes rows on success', async () => {
+        fromMock.mockReturnValue(queryReturning({
+            data: [{ place_id: 79, tor: 1, dzien_tygodnia: 'pon', godzina_od: '08:00:00', godzina_do: '10:45:00', status: 'zajecia', sekcja: 'Mała niecka', opis: null }],
+            error: null
+        }));
 
         const { fetchSchedule } = await import('./database.js');
         const schedule = await fetchSchedule(79);
 
-        expect(schedule).toEqual([]);
+        expect(schedule).toEqual([{ dzien: 'pon', sekcja: 'Mała niecka', tor: 1, od: '08:00', do: '10:45', status: 'zajecia', opis: null }]);
     });
 });

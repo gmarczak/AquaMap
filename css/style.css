@@ -270,6 +270,11 @@ body {
     font-style: italic;
 }
 
+.harmonogram-blad {
+    font-size: 13px;
+    color: #c0392b;
+}
+
 .places-error {
     font-size: 13px;
     color: #b00020;

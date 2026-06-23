@@ -30,7 +30,7 @@ export async function fetchSchedule(placeId) {
 
     if (error) {
         console.error('Error fetching schedule from Supabase:', error);
-        return [];
+        throw error;
     }
 
     return (data ?? []).map(row => ({
