@@ -1,6 +1,7 @@
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { MAPBOX_ACCESS_TOKEN } from './config.js';
+import { isOpenNow } from './openingHours.js';
 
 export { distanceKm } from './geo.js';
 
@@ -45,7 +46,7 @@ function toFeatureCollection(places) {
         features: places.map(place => ({
             type: 'Feature',
             geometry: { type: 'Point', coordinates: [place.lng, place.lat] },
-            properties: { id: place.id }
+            properties: { id: place.id, openStatus: isOpenNow(place.godziny) }
         }))
     };
 }
@@ -60,7 +61,7 @@ function fitToPlaces(places) {
         new mapboxgl.LngLatBounds([places[0].lng, places[0].lat], [places[0].lng, places[0].lat])
     );
 
-    map.fitBounds(bounds, { padding: 48, maxZoom: 11, duration: 0 });
+    map.fitBounds(bounds, { padding: 24, maxZoom: 7, duration: 0 });
 }
 
 // Markery jako klastrowane źródło GeoJSON (zamiast pojedynczych DOM-markerów),
@@ -120,7 +121,12 @@ export function setPlaces(places, onPlaceClick) {
         source: PLACES_SOURCE_ID,
         filter: ['!', ['has', 'point_count']],
         paint: {
-            'circle-color': '#2f6fed',
+            'circle-color': [
+                'case',
+                ['==', ['get', 'openStatus'], true], '#34c759',
+                ['==', ['get', 'openStatus'], false], '#ff3b30',
+                '#8a9bb5'
+            ],
             'circle-radius': 8,
             'circle-stroke-width': 2,
             'circle-stroke-color': '#ffffff'
@@ -131,6 +137,14 @@ export function setPlaces(places, onPlaceClick) {
         const features = map.queryRenderedFeatures(event.point, { layers: ['clusters'] });
         const clusterId = features[0].properties.cluster_id;
         const source = /** @type {mapboxgl.GeoJSONSource} */ (map.getSource(PLACES_SOURCE_ID));
+
+        const container = map.getContainer();
+        container.style.transition = 'transform 0.08s ease-out';
+        container.style.transform = 'scale(0.975)';
+        setTimeout(() => {
+            container.style.transition = 'transform 0.15s ease-in';
+            container.style.transform = 'scale(1)';
+        }, 80);
 
         source.getClusterExpansionZoom(clusterId, (error, zoom) => {
             if (error) {

@@ -33,7 +33,7 @@
                 <div class="sheet-handle" id="sheet-handle" aria-hidden="true"></div>
                 <h2 class="list-title">Baseny</h2>
                 <div id="location-banner" class="location-banner hidden">
-                    <span>Włącz lokalizację, aby zobaczyć odległości i więcej szczegółów.</span>
+                    <span>📍 Włącz lokalizację, aby zobaczyć odległości.</span>
                     <button id="location-banner-close" aria-label="Zamknij">&times;</button>
                 </div>
                 <div class="search-wrap">
@@ -45,12 +45,15 @@
                 <button type="button" id="open-now-chip" class="filter-chip" aria-pressed="false">
                     🕒 Tylko otwarte teraz
                 </button>
+                <div id="filter-count" class="filter-count hidden"></div>
                 <ul id="places-list">
                     <li class="places-info">Ładowanie danych…</li>
                 </ul>
             </div>
             <div id="details-view" class="hidden">
-                <button id="back-button">&larr; Wstecz</button>
+                <div class="details-header">
+                    <button id="back-button">&larr; Wstecz</button>
+                </div>
                 <div id="details-content">
                 </div>
             </div>

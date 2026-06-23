@@ -44,6 +44,37 @@ function parseSegment(segment) {
     };
 }
 
+function fmtMinutes(minutes) {
+    return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
+/**
+ * Zwraca godziny otwarcia na dziś w formacie "HH:MM–HH:MM", albo null gdy
+ * nie można ustalić (brak danych lub nierozpoznany format).
+ */
+export function getTodayHours(godziny, now = new Date()) {
+    if (!godziny || typeof godziny !== 'string') {
+        return null;
+    }
+
+    const day = now.getDay();
+
+    for (const segment of godziny.split(',')) {
+        const parsed = parseSegment(segment.trim());
+        if (!parsed) {
+            continue;
+        }
+
+        if (parsed.fromDay !== undefined && !dayRangeIncludes(parsed.fromDay, parsed.toDay, day)) {
+            continue;
+        }
+
+        return `${fmtMinutes(parsed.fromMinutes)}–${fmtMinutes(parsed.toMinutes)}`;
+    }
+
+    return null;
+}
+
 /**
  * Best-effort check whether a place is open right now, parsed from free-text
  * "godziny" field. Returns null when the format can't be parsed, so callers

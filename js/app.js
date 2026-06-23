@@ -1,7 +1,7 @@
 import { initMap, setPlaces, flyToLocation, map, geolocateControl } from './map.js';
 import { fetchPlaces, fetchSchedule } from './database.js';
 import { renderScheduleTable } from './schedule.js';
-import { isOpenNow } from './openingHours.js';
+import { isOpenNow, getTodayHours } from './openingHours.js';
 import { distanceKm } from './geo.js';
 import { safeUrl } from './utils.js';
 
@@ -58,7 +58,7 @@ function formatRating(ocena) {
 // to przybliżenie, nie twarda klasyfikacja.
 const CATEGORY_RULES = [
     { test: /aquapark|park wodny|water ?park/i, label: 'Aquapark', icon: '🌊' },
-    { test: /hotel|spa|wellness|resort|termy/i, label: 'Hotel / SPA', icon: '🏨' },
+    { test: /hotel|spa|wellness|resort|termy|mercure|hilton|ibis|novotel|marriott|radisson|sheraton|qubus|turówka/i, label: 'Hotel / SPA', icon: '🏨' },
     { test: /odkryt|letni/i, label: 'Basen odkryty', icon: '☀️' },
     { test: /kryt/i, label: 'Basen kryty', icon: '🏊' }
 ];
@@ -161,6 +161,7 @@ function renderInfo(place) {
 async function showDetails(place) {
     document.getElementById('list-view').classList.add('hidden');
     document.getElementById('details-view').classList.remove('hidden');
+    document.getElementById('back-button').textContent = `← ${place.nazwa}`;
 
     const content = document.getElementById('details-content');
     content.innerHTML = `
@@ -198,6 +199,9 @@ async function showDetails(place) {
 function showList() {
     document.getElementById('details-view').classList.add('hidden');
     document.getElementById('list-view').classList.remove('hidden');
+    document.getElementById('back-button').textContent = '← Wstecz';
+    // Przewiń panel z powrotem na górę po powrocie do listy
+    document.getElementById('sidebar').scrollTop = 0;
 }
 
 function applySearchFilter() {
@@ -294,6 +298,7 @@ function setupSheetDrag() {
         dragging = true;
         startY = event.clientY;
         startHeightVh = currentHeightVh();
+        sidebar.style.transition = 'none';
         handle.setPointerCapture(event.pointerId);
     });
 
@@ -312,8 +317,10 @@ function setupSheetDrag() {
             return;
         }
         dragging = false;
+        sidebar.style.transition = 'height 0.25s cubic-bezier(0.2, 0, 0, 1)';
         setHeightVh(nearestSnap(currentHeightVh()));
         map.resize();
+        setTimeout(() => { sidebar.style.transition = ''; }, 260);
     }
 
     handle.addEventListener('pointerup', endDrag);
@@ -336,6 +343,16 @@ function getVisiblePlaces() {
 function renderList() {
     const listElement = document.getElementById('places-list');
     const places = getVisiblePlaces();
+
+    const countEl = document.getElementById('filter-count');
+    if (countEl) {
+        if (openNowOnly) {
+            countEl.textContent = `${places.length} otwartych`;
+            countEl.classList.remove('hidden');
+        } else {
+            countEl.classList.add('hidden');
+        }
+    }
 
     if (places.length === 0) {
         listElement.innerHTML = '<li class="places-error">Brak basenów spełniających kryteria.</li>';
@@ -363,7 +380,9 @@ function renderList() {
             badge.push('<span class="place-badge badge-closed">Zamknięte</span>');
         }
         if (!brak(place.godziny)) {
-            badge.push(`<span class="place-hours">${escapeHtml(place.godziny)}</span>`);
+            const todayHours = getTodayHours(place.godziny);
+            const hoursLabel = todayHours ? `Dziś: ${todayHours}` : place.godziny;
+            badge.push(`<span class="place-hours">${escapeHtml(hoursLabel)}</span>`);
         }
         const dystans = userLocation
             ? `<span class="place-dist">${distanceKm(userLocation.lat, userLocation.lng, place.lat, place.lng).toFixed(1)} km</span>`
