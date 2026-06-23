@@ -1,9 +1,56 @@
-import { initMap, addMarker, flyToLocation, map } from './map.js';
+import { initMap, addMarker, flyToLocation, map, geolocateControl } from './map.js';
 import { fetchPlaces, fetchSchedule } from './database.js';
 import { renderScheduleTable } from './schedule.js';
-import { escapeHtml, safeUrl } from './utils.js';
+import { isOpenNow } from './openingHours.js';
+import { distanceKm } from './geo.js';
+import { safeUrl } from './utils.js';
 
 initMap('map');
+
+let allPlaces = [];
+let userLocation = null;
+let openNowOnly = false;
+
+function waitForMapLoad() {
+    return new Promise(resolve => map.on('load', resolve));
+}
+
+function updateOfflineBanner() {
+    document.getElementById('offline-banner').classList.toggle('hidden', navigator.onLine);
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Cennik bywa zapisany jako kilka linijek (np. "Bilet 1h: 22 zł\nKarnet: 65 zł").
+// Renderujemy to jako listę zamiast zlepiać w jeden ciąg tekstu.
+function renderCennik(cennik) {
+    if (!cennik || cennik === 'Brak') {
+        return '<p><strong>💰 Cennik:</strong> Brak</p>';
+    }
+
+    const linie = cennik.split('\n').map(l => l.trim()).filter(Boolean);
+
+    if (linie.length <= 1) {
+        return `<p><strong>💰 Cennik:</strong> ${escapeHtml(cennik)}</p>`;
+    }
+
+    const pozycje = linie.map(linia => {
+        const [etykieta, ...reszta] = linia.split(':');
+        const wartosc = reszta.join(':').trim();
+        return wartosc
+            ? `<li><span class="cennik-etykieta">${escapeHtml(etykieta.trim())}</span><span class="cennik-wartosc">${escapeHtml(wartosc)}</span></li>`
+            : `<li>${escapeHtml(linia)}</li>`;
+    }).join('');
+
+    return `
+        <strong>💰 Cennik:</strong>
+        <ul class="cennik-lista">${pozycje}</ul>
+    `;
+}
 
 async function showDetails(place) {
     document.getElementById('list-view').classList.add('hidden');
@@ -19,7 +66,7 @@ async function showDetails(place) {
         <div class="detail-card">
             <h3>${escapeHtml(place.nazwa)}</h3>
             <p><strong>🕒 Godziny:</strong> ${escapeHtml(place.godziny)}</p>
-            <p><strong>💰 Cennik:</strong> ${escapeHtml(place.cennik)}</p>
+            <div class="cennik-blok">${renderCennik(place.cennik)}</div>
             <p><strong>⭐ Ocena:</strong> ${escapeHtml(place.ocena)}</p>
             <p><strong>🏆 Klub:</strong> ${escapeHtml(place.klub)}</p>
             <p><strong>🔗 Strona:</strong> ${stronaHtml}</p>
@@ -43,45 +90,56 @@ function showList() {
     document.getElementById('list-view').classList.remove('hidden');
 }
 
-function setupSearch() {
-    const searchInput = document.getElementById('search-input');
+function applySearchFilter() {
+    const searchInput = /** @type {HTMLInputElement} */ (document.getElementById('search-input'));
+    const query = searchInput.value.trim().toLowerCase();
 
-    searchInput.addEventListener('input', () => {
-        const query = searchInput.value.trim().toLowerCase();
-
-        document.querySelectorAll('.place-item').forEach(item => {
-            const matches = item.textContent.toLowerCase().includes(query);
-            item.style.display = matches ? '' : 'none';
-        });
+    /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.place-item')).forEach(item => {
+        const matches = item.textContent.toLowerCase().includes(query);
+        item.style.display = matches ? '' : 'none';
     });
 }
 
+function setupSearch() {
+    document.getElementById('search-input').addEventListener('input', applySearchFilter);
+}
 
-async function startApp() {
+function setupOpenNowFilter() {
+    document.getElementById('open-now-checkbox').addEventListener('change', event => {
+        openNowOnly = /** @type {HTMLInputElement} */ (event.target).checked;
+        renderList();
+    });
+}
+
+function getVisiblePlaces() {
+    let places = openNowOnly ? allPlaces.filter(place => isOpenNow(place.godziny) !== false) : allPlaces;
+
+    if (userLocation) {
+        places = [...places].sort((a, b) =>
+            distanceKm(userLocation.lat, userLocation.lng, a.lat, a.lng)
+            - distanceKm(userLocation.lat, userLocation.lng, b.lat, b.lng)
+        );
+    }
+
+    return places;
+}
+
+function renderList() {
     const listElement = document.getElementById('places-list');
+    const places = getVisiblePlaces();
 
-    document.getElementById('back-button').addEventListener('click', showList);
-
-    let places;
-    try {
-        places = await fetchPlaces();
-    } catch {
-        listElement.innerHTML = '<li class="places-info places-error">Nie udało się wczytać danych. Sprawdź połączenie i odśwież stronę.</li>';
+    if (places.length === 0) {
+        listElement.innerHTML = '<li class="places-error">Brak basenów spełniających kryteria.</li>';
         return;
     }
 
     listElement.innerHTML = '';
 
-    if (places.length === 0) {
-        listElement.innerHTML = '<li class="places-info">Brak basenów do wyświetlenia.</li>';
-        return;
-    }
-
     places.forEach(place => {
-        addMarker(place, () => showDetails(place));
-
         const listItem = document.createElement('li');
-        listItem.textContent = place.nazwa;
+        listItem.textContent = userLocation
+            ? `${place.nazwa} (${distanceKm(userLocation.lat, userLocation.lng, place.lat, place.lng).toFixed(1)} km)`
+            : place.nazwa;
         listItem.classList.add('place-item');
 
         listItem.addEventListener('click', () => {
@@ -92,10 +150,43 @@ async function startApp() {
         listElement.appendChild(listItem);
     });
 
-    setupSearch();
+    applySearchFilter();
 }
 
-map.on('load', startApp);
+geolocateControl.on('geolocate', position => {
+    userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+    renderList();
+});
+
+async function startApp() {
+    const listElement = document.getElementById('places-list');
+
+    try {
+        [, allPlaces] = await Promise.all([waitForMapLoad(), fetchPlaces()]);
+    } catch {
+        listElement.innerHTML = '<li class="places-error">Nie udało się załadować danych. Sprawdź połączenie i odśwież stronę.</li>';
+        return;
+    }
+
+    if (allPlaces.length === 0) {
+        listElement.innerHTML = '<li class="places-error">Brak basenów do wyświetlenia.</li>';
+        return;
+    }
+
+    document.getElementById('back-button').addEventListener('click', showList);
+
+    allPlaces.forEach(place => addMarker(place, () => showDetails(place)));
+
+    renderList();
+    setupSearch();
+    setupOpenNowFilter();
+}
+
+updateOfflineBanner();
+window.addEventListener('online', updateOfflineBanner);
+window.addEventListener('offline', updateOfflineBanner);
+
+startApp();
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {

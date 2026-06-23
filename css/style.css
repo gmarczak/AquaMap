@@ -15,6 +15,21 @@ body {
     font-weight: bold;
 }
 
+#offline-banner {
+    padding: 8px 15px;
+    background-color: #fff3cd;
+    color: #856404;
+    text-align: center;
+    font-size: 13px;
+}
+
+#open-now-filter {
+    display: block;
+    font-size: 13px;
+    margin: 8px 0;
+    cursor: pointer;
+}
+
 #content {
     display: flex;
     flex: 1;
@@ -115,6 +130,43 @@ body {
 .detail-card a {
     color: #2980b9;
     word-break: break-all;
+}
+
+.cennik-blok {
+    margin: 8px 0;
+    font-size: 14px;
+}
+
+.cennik-lista {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+    border: 1px solid #eaeaea;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.cennik-lista li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 10px;
+    font-size: 13px;
+}
+
+.cennik-lista li:nth-child(odd) {
+    background-color: #f8f9fa;
+}
+
+.cennik-etykieta {
+    color: #555;
+}
+
+.cennik-wartosc {
+    font-weight: 600;
+    color: #2c3e50;
+    text-align: right;
+    white-space: nowrap;
 }
 
 /* Harmonogram torów */
@@ -245,6 +297,12 @@ body {
     font-style: italic;
 }
 
+.places-error {
+    font-size: 13px;
+    color: #b00020;
+    padding: 8px 0;
+}
+
 @media (max-width: 768px) {
     #content {
         flex-direction: column-reverse;
@@ -261,5 +319,19 @@ body {
     #map {
         width: 100%;
         height: 60%;
+    }
+
+    #search-input {
+        font-size: 16px;
+    }
+
+    .place-item {
+        min-height: 28px;
+        display: flex;
+        align-items: center;
+    }
+
+    #open-now-filter {
+        padding: 6px 0;
     }
 }

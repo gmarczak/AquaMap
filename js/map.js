@@ -1,7 +1,12 @@
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { MAPBOX_ACCESS_TOKEN } from './config.js';
 import { escapeHtml } from './utils.js';
 
+export { distanceKm } from './geo.js';
+
 export let map;
+export let geolocateControl;
 
 export function initMap(containerId) {
     mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN
@@ -10,18 +15,19 @@ export function initMap(containerId) {
         container: containerId, // container ID
         style: 'mapbox://styles/mapbox/streets-v11', // style URL
         center: [19.1451, 51.9194], // starting position [lng, lat]
-        zoom: 5.5 // starting zoom
+        zoom: 8 // starting zoom
     });
 
     map.addControl(new mapboxgl.NavigationControl());
 
-    map.addControl(new mapboxgl.GeolocateControl({
+    geolocateControl = new mapboxgl.GeolocateControl({
         // Ogranicz docelowe przybliżenie po geolokalizacji (zamiast maksymalnego).
         fitBoundsOptions: { maxZoom: 14 },
         positionOptions: { enableHighAccuracy: true },
         trackUserLocation: true,
         showUserHeading: true
-    }));
+    });
+    map.addControl(geolocateControl);
 
     return map;
 }
