@@ -119,57 +119,38 @@ body {
     box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-/* Przełącznik "tylko otwarte" */
+/* Filtr "tylko otwarte" jako chip */
 
-.toggle {
-    display: flex;
+.filter-chip {
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    font-size: 14px;
-    color: var(--muted);
+    gap: 6px;
+    padding: 10px 16px;
     margin-bottom: 14px;
-    user-select: none;
-}
-
-.toggle input {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.toggle-track {
-    width: 40px;
-    height: 24px;
+    border: 1px solid var(--line);
     border-radius: 999px;
-    background: #cfd6dd;
-    position: relative;
-    transition: background 0.2s;
-    flex-shrink: 0;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.toggle-thumb {
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow: var(--shadow-sm);
-    transition: transform 0.2s;
+.filter-chip:hover {
+    border-color: #cdd6df;
 }
 
-.toggle input:checked + .toggle-track {
+.filter-chip.active {
     background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
 }
 
-.toggle input:checked + .toggle-track .toggle-thumb {
-    transform: translateX(16px);
-}
-
-.toggle input:focus-visible + .toggle-track {
+.filter-chip:focus-visible {
+    outline: none;
     box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
@@ -185,12 +166,32 @@ body {
 }
 
 .place-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
     padding: 12px 14px;
     cursor: pointer;
     transition: border-color 0.15s, box-shadow 0.15s, transform 0.05s;
+}
+
+.place-icon {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.place-main {
+    flex: 1;
+    min-width: 0;
 }
 
 .place-item:hover {
@@ -251,6 +252,50 @@ body {
     margin-left: auto;
 }
 
+.place-hours {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* Baner braku lokalizacji */
+
+.location-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 13px;
+}
+
+.location-banner button {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+}
+
+/* Uchwyt do przeciągania dolnego panelu (tylko mobile) */
+
+.sheet-handle {
+    display: none;
+    width: 40px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--line);
+    margin: 2px auto 12px;
+    touch-action: none;
+    cursor: grab;
+}
+
 /* Skeleton ładowania listy */
 
 .place-item.skeleton {
@@ -294,6 +339,12 @@ body {
 #map {
     flex: 1;
     background-color: #dcdcdc;
+}
+
+/* Większy obszar dotykowy przycisku "i" (atrybucje Mapbox) */
+.mapboxgl-ctrl-attrib-button {
+    width: 34px !important;
+    height: 34px !important;
 }
 
 .hidden {
@@ -361,6 +412,11 @@ body {
 .chip-time {
     background: #eef1f4;
     color: #344;
+}
+
+.chip-type {
+    background: var(--accent-soft);
+    color: var(--accent);
 }
 
 .chip-rating {
@@ -659,14 +715,23 @@ body {
 
     #sidebar {
         width: 100%;
-        height: 52%;
-        padding: 12px;
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        height: 38vh;
+        min-height: 10vh;
+        max-height: 92vh;
+        padding: 8px 12px 12px;
+        border-radius: 18px 18px 0 0;
+        box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.14);
+        flex-shrink: 0;
+    }
+
+    .sheet-handle {
+        display: block;
     }
 
     #map {
         width: 100%;
-        height: 48%;
+        flex: 1;
+        min-height: 0;
     }
 
     /* 16px zapobiega autozoomowi iOS przy focusie pola */
@@ -676,5 +741,86 @@ body {
 
     .place-name {
         font-size: 16px;
+    }
+}
+
+/* Tryb ciemny */
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --accent: #5b93ff;
+        --accent-soft: rgba(91, 147, 255, 0.18);
+        --ink: #e7ecf2;
+        --muted: #9aa7b5;
+        --bg: #11161c;
+        --surface: #1b222b;
+        --line: #2a323c;
+        --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+
+    #map {
+        background-color: #11161c;
+    }
+
+    .place-badge,
+    .chip,
+    .amenity {
+        background: #262e38;
+        color: #c7d0da;
+    }
+
+    .badge-rating,
+    .chip-rating {
+        background: #3a2f12;
+        color: #e0b552;
+    }
+
+    .badge-open,
+    .chip-open {
+        background: #143524;
+        color: #4fd482;
+    }
+
+    .badge-closed,
+    .chip-closed {
+        background: #3a1818;
+        color: #f08989;
+    }
+
+    .detail-card,
+    .hs-section-btn.active {
+        background: var(--surface);
+    }
+
+    .detail-title,
+    .section-title {
+        color: var(--ink);
+    }
+
+    .cennik-tabela {
+        border-color: var(--line);
+    }
+
+    .cennik-tabela tr:nth-child(odd) {
+        background: #20272f;
+    }
+
+    .cennik-tabela tr + tr td {
+        border-top-color: var(--line);
+    }
+
+    .cennik-cena {
+        color: var(--ink);
+    }
+
+    .hs-tabs,
+    .hs-sections {
+        background: #20272f;
+    }
+
+    .skel {
+        background: linear-gradient(90deg, #20272f 25%, #2a323c 37%, #20272f 63%);
+        background-size: 400% 100%;
     }
 }

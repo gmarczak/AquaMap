@@ -1,4 +1,4 @@
-import { initMap, addMarker, flyToLocation, map, geolocateControl } from './map.js';
+import { initMap, setPlaces, flyToLocation, map, geolocateControl } from './map.js';
 import { fetchPlaces, fetchSchedule } from './database.js';
 import { renderScheduleTable } from './schedule.js';
 import { isOpenNow } from './openingHours.js';
@@ -38,11 +38,46 @@ function brak(value) {
     return value === null || value === undefined || value === '' || value === 'Brak';
 }
 
+// Pole "ocena" przychodzi z różnych źródeł w niespójnym formacie ("5/5", "5.0",
+// "4.6"). Sprowadzamy wszystko do jednej skali X.X w stylu Google ("5/5" -> "5.0").
+function formatRating(ocena) {
+    if (brak(ocena)) {
+        return null;
+    }
+
+    const match = String(ocena).match(/(\d+(?:[.,]\d+)?)/);
+    if (!match) {
+        return null;
+    }
+
+    const value = Number(match[1].replace(',', '.'));
+    return Number.isFinite(value) ? value.toFixed(1) : null;
+}
+
+// Baza nie ma kolumny z typem obiektu, więc kategorię szacujemy z nazwy —
+// to przybliżenie, nie twarda klasyfikacja.
+const CATEGORY_RULES = [
+    { test: /aquapark|park wodny|water ?park/i, label: 'Aquapark', icon: '🌊' },
+    { test: /hotel|spa|wellness|resort|termy/i, label: 'Hotel / SPA', icon: '🏨' },
+    { test: /odkryt|letni/i, label: 'Basen odkryty', icon: '☀️' },
+    { test: /kryt/i, label: 'Basen kryty', icon: '🏊' }
+];
+const DEFAULT_CATEGORY = { label: 'Basen', icon: '🏊' };
+
+function inferCategory(nazwa) {
+    const rule = CATEGORY_RULES.find(({ test }) => test.test(nazwa || ''));
+    return rule || DEFAULT_CATEGORY;
+}
+
 function renderChipy(place) {
     const chipy = [];
 
-    if (!brak(place.ocena)) {
-        chipy.push(`<span class="chip chip-rating">⭐ ${escapeHtml(place.ocena)}</span>`);
+    const category = inferCategory(place.nazwa);
+    chipy.push(`<span class="chip chip-type">${category.icon} ${escapeHtml(category.label)}</span>`);
+
+    const ocena = formatRating(place.ocena);
+    if (ocena) {
+        chipy.push(`<span class="chip chip-rating">⭐ ${ocena}</span>`);
     }
 
     if (!brak(place.godziny)) {
@@ -202,10 +237,87 @@ function setupSearch() {
 }
 
 function setupOpenNowFilter() {
-    document.getElementById('open-now-checkbox').addEventListener('change', event => {
-        openNowOnly = /** @type {HTMLInputElement} */ (event.target).checked;
+    const chip = document.getElementById('open-now-chip');
+    chip.addEventListener('click', () => {
+        openNowOnly = !openNowOnly;
+        chip.classList.toggle('active', openNowOnly);
+        chip.setAttribute('aria-pressed', String(openNowOnly));
         renderList();
     });
+}
+
+const LOCATION_BANNER_DISMISSED_KEY = 'aquamap-location-banner-dismissed';
+
+function setupLocationBanner() {
+    const banner = document.getElementById('location-banner');
+
+    if (sessionStorage.getItem(LOCATION_BANNER_DISMISSED_KEY)) {
+        return;
+    }
+
+    banner.classList.remove('hidden');
+    document.getElementById('location-banner-close').addEventListener('click', () => {
+        banner.classList.add('hidden');
+        sessionStorage.setItem(LOCATION_BANNER_DISMISSED_KEY, '1');
+    });
+}
+
+function hideLocationBanner() {
+    document.getElementById('location-banner').classList.add('hidden');
+}
+
+// Dolny panel na telefonach jako "bottom sheet": przeciągnięcie uchwytu zmienia
+// wysokość panelu i po puszczeniu chwyta najbliższy z punktów zatrzaśnięcia.
+const SHEET_SNAP_VH = [14, 38, 86];
+
+function setupSheetDrag() {
+    const sidebar = document.getElementById('sidebar');
+    const handle = document.getElementById('sheet-handle');
+
+    let dragging = false;
+    let startY = 0;
+    let startHeightVh = SHEET_SNAP_VH[1];
+
+    function currentHeightVh() {
+        return (sidebar.getBoundingClientRect().height / window.innerHeight) * 100;
+    }
+
+    function setHeightVh(value) {
+        sidebar.style.height = `${value}vh`;
+    }
+
+    function nearestSnap(value) {
+        return SHEET_SNAP_VH.reduce((a, b) => Math.abs(b - value) < Math.abs(a - value) ? b : a);
+    }
+
+    handle.addEventListener('pointerdown', event => {
+        dragging = true;
+        startY = event.clientY;
+        startHeightVh = currentHeightVh();
+        handle.setPointerCapture(event.pointerId);
+    });
+
+    handle.addEventListener('pointermove', event => {
+        if (!dragging) {
+            return;
+        }
+        const deltaVh = ((startY - event.clientY) / window.innerHeight) * 100;
+        const next = Math.min(92, Math.max(10, startHeightVh + deltaVh));
+        setHeightVh(next);
+        map.resize();
+    });
+
+    function endDrag() {
+        if (!dragging) {
+            return;
+        }
+        dragging = false;
+        setHeightVh(nearestSnap(currentHeightVh()));
+        map.resize();
+    }
+
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
 }
 
 function getVisiblePlaces() {
@@ -240,14 +352,18 @@ function renderList() {
         placeItems.set(place.id, listItem);
 
         const badge = [];
-        if (!brak(place.ocena)) {
-            badge.push(`<span class="place-badge badge-rating">⭐ ${escapeHtml(place.ocena)}</span>`);
+        const ocena = formatRating(place.ocena);
+        if (ocena) {
+            badge.push(`<span class="place-badge badge-rating">⭐ ${ocena}</span>`);
         }
         const otwarte = isOpenNow(place.godziny);
         if (otwarte === true) {
             badge.push('<span class="place-badge badge-open">Otwarte</span>');
         } else if (otwarte === false) {
             badge.push('<span class="place-badge badge-closed">Zamknięte</span>');
+        }
+        if (!brak(place.godziny)) {
+            badge.push(`<span class="place-hours">${escapeHtml(place.godziny)}</span>`);
         }
         const dystans = userLocation
             ? `<span class="place-dist">${distanceKm(userLocation.lat, userLocation.lng, place.lat, place.lng).toFixed(1)} km</span>`
@@ -257,7 +373,14 @@ function renderList() {
             ? `<div class="place-meta">${badge.join('')}${dystans}</div>`
             : '';
 
-        listItem.innerHTML = `<div class="place-name">${escapeHtml(place.nazwa)}</div>${meta}`;
+        const category = inferCategory(place.nazwa);
+        listItem.innerHTML = `
+            <span class="place-icon" aria-hidden="true">${category.icon}</span>
+            <div class="place-main">
+                <div class="place-name">${escapeHtml(place.nazwa)}</div>
+                ${meta}
+            </div>
+        `;
 
         listItem.addEventListener('click', () => {
             flyToLocation(place.lat, place.lng);
@@ -272,6 +395,7 @@ function renderList() {
 
 geolocateControl.on('geolocate', position => {
     userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+    hideLocationBanner();
     renderList();
 });
 
@@ -293,11 +417,13 @@ async function startApp() {
 
     document.getElementById('back-button').addEventListener('click', showList);
 
-    allPlaces.forEach(place => addMarker(place, () => selectPlace(place)));
+    setPlaces(allPlaces, place => selectPlace(place));
 
     renderList();
     setupSearch();
     setupOpenNowFilter();
+    setupLocationBanner();
+    setupSheetDrag();
 }
 
 updateOfflineBanner();
