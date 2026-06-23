@@ -27,34 +27,13 @@ afterEach(() => {
 });
 
 describe('fetchPlaces', () => {
-    it('normalizes rows on success', async () => {
-        fromMock.mockReturnValue(queryReturning({
-            data: [{
-                id: 1,
-                name: 'Basen Testowy',
-                latitude: 50.1,
-                longitude: 19.9,
-                opening_hours: '06:00-22:00',
-                length_meters: 25,
-                difficulty: 'easy',
-                amenities: ['sauna']
-            }],
-            error: null
-        }));
+    it('returns data on success', async () => {
+        fromMock.mockReturnValue(queryReturning({ data: [{ id: 1, nazwa: 'Basen Testowy' }], error: null }));
 
         const { fetchPlaces } = await import('./database.js');
         const places = await fetchPlaces();
 
-        expect(places).toEqual([{
-            id: 1,
-            nazwa: 'Basen Testowy',
-            lat: 50.1,
-            lng: 19.9,
-            godziny: '06:00-22:00',
-            dlugosc: 25,
-            trudnosc: 'easy',
-            udogodnienia: ['sauna']
-        }]);
+        expect(places).toEqual([{ id: 1, nazwa: 'Basen Testowy' }]);
     });
 
     it('throws when Supabase returns an error', async () => {

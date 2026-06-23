@@ -3,6 +3,7 @@ import { fetchPlaces, fetchSchedule } from './database.js';
 import { renderScheduleTable } from './schedule.js';
 import { isOpenNow } from './openingHours.js';
 import { distanceKm } from './geo.js';
+import { safeUrl } from './utils.js';
 
 initMap('map');
 
@@ -24,41 +25,21 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-const UDOGODNIENIA_META = {
-    parking: '🅿️ Parking',
-    gym: '🏋️ Siłownia',
-    jacuzzi: '🛁 Jacuzzi',
-    sauna: '🧖 Sauna',
-    lockers: '🔐 Szafki',
-    kids_pool: '🧒 Brodzik'
-};
-
-const TRUDNOSC_META = {
-    easy: 'Łatwy',
-    medium: 'Średni',
-    hard: 'Trudny',
-    legendary: 'Legendarny'
-};
-
-// Godziny otwarcia bywają puste w bazie — wtedy wyliczamy widełki z najwcześniejszego
-// początku i najpóźniejszego końca slotów w harmonogramie.
-function godzinyZHarmonogramu(sloty) {
-    const czasy = sloty.flatMap(s => [s.od, s.do]).filter(Boolean);
-    if (czasy.length === 0) {
-        return null;
-    }
-    const od = czasy.reduce((a, b) => (a < b ? a : b));
-    const doG = czasy.reduce((a, b) => (a > b ? a : b));
-    return `${od} - ${doG}`;
+function brak(value) {
+    return value === null || value === undefined || value === '' || value === 'Brak';
 }
 
-function renderChipy(place, godziny) {
+function renderChipy(place) {
     const chipy = [];
 
-    if (godziny) {
-        chipy.push(`<span class="chip chip-time">🕒 ${escapeHtml(godziny)}</span>`);
+    if (!brak(place.ocena)) {
+        chipy.push(`<span class="chip chip-rating">⭐ ${escapeHtml(place.ocena)}</span>`);
+    }
 
-        const otwarte = isOpenNow(godziny);
+    if (!brak(place.godziny)) {
+        chipy.push(`<span class="chip chip-time">🕒 ${escapeHtml(place.godziny)}</span>`);
+
+        const otwarte = isOpenNow(place.godziny);
         if (otwarte !== null) {
             chipy.push(otwarte
                 ? '<span class="chip chip-open">Otwarte</span>'
@@ -66,27 +47,53 @@ function renderChipy(place, godziny) {
         }
     }
 
-    if (place.dlugosc) {
-        chipy.push(`<span class="chip">🏊 ${escapeHtml(place.dlugosc)} m</span>`);
-    }
-    if (place.trudnosc && TRUDNOSC_META[place.trudnosc]) {
-        chipy.push(`<span class="chip">${escapeHtml(TRUDNOSC_META[place.trudnosc])}</span>`);
-    }
-
     return `<div class="detail-chips">${chipy.join('')}</div>`;
 }
 
-function renderUdogodnienia(udogodnienia) {
-    if (!udogodnienia || udogodnienia.length === 0) {
+// Cennik to swobodny tekst; rozbijamy na pozycje po nowych liniach lub kropkach,
+// żeby pokazać go jako czytelną listę zamiast jednego bloku.
+function renderCennik(cennik) {
+    if (brak(cennik)) {
         return '';
     }
-    const items = udogodnienia
-        .map(a => `<span class="amenity">${escapeHtml(UDOGODNIENIA_META[a] || a)}</span>`)
+
+    const pozycje = String(cennik)
+        .split(/\n|(?<=\.)\s+/)
+        .map(l => l.trim())
+        .filter(Boolean);
+
+    const lista = pozycje
+        .map(p => `<li>${escapeHtml(p)}</li>`)
         .join('');
+
     return `
         <div class="detail-section">
-            <h4 class="section-title">Udogodnienia</h4>
-            <div class="amenity-list">${items}</div>
+            <h4 class="section-title">Cennik</h4>
+            <ul class="cennik-lista">${lista}</ul>
+        </div>
+    `;
+}
+
+function renderInfo(place) {
+    const wiersze = [];
+
+    if (!brak(place.klub)) {
+        wiersze.push(`<p class="info-row"><span class="info-label">🏆 Klub</span><span>${escapeHtml(place.klub)}</span></p>`);
+    }
+
+    const stronaUrl = !brak(place.strona) ? safeUrl(place.strona) : null;
+    if (stronaUrl) {
+        wiersze.push(`<p class="info-row"><span class="info-label">🔗 Strona</span><a href="${escapeHtml(stronaUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(place.strona)}</a></p>`);
+    }
+
+    if (wiersze.length === 0) {
+        return '';
+    }
+
+    return `
+        <div class="detail-section">
+            <h4 class="section-title">Informacje</h4>
+            ${wiersze.join('')}
         </div>
     `;
 }
@@ -99,30 +106,20 @@ async function showDetails(place) {
     content.innerHTML = `
         <div class="detail-card">
             <h3 class="detail-title">${escapeHtml(place.nazwa)}</h3>
-            <div class="detail-chips"><span class="chip chip-muted">Wczytywanie…</span></div>
+            ${renderChipy(place)}
             <div class="detail-section">
                 <h4 class="section-title">Harmonogram</h4>
                 <div id="harmonogram-container" class="harmonogram-loading">Wczytywanie harmonogramu…</div>
             </div>
-        </div>
-    `;
-
-    const sloty = await fetchSchedule(place.id);
-    const godziny = place.godziny || godzinyZHarmonogramu(sloty);
-
-    content.innerHTML = `
-        <div class="detail-card">
-            <h3 class="detail-title">${escapeHtml(place.nazwa)}</h3>
-            ${renderChipy(place, godziny)}
-            <div class="detail-section">
-                <h4 class="section-title">Harmonogram</h4>
-                <div id="harmonogram-container"></div>
-            </div>
-            ${renderUdogodnienia(place.udogodnienia)}
+            ${renderCennik(place.cennik)}
+            ${renderInfo(place)}
         </div>
     `;
 
     const harmonogramContainer = document.getElementById('harmonogram-container');
+    const sloty = await fetchSchedule(place.id);
+
+    harmonogramContainer.classList.remove('harmonogram-loading');
     if (sloty.length === 0) {
         harmonogramContainer.innerHTML = '<p class="harmonogram-brak">Brak danych o harmonogramie dla tego basenu.</p>';
     } else {

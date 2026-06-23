@@ -134,11 +134,6 @@ body {
     line-height: 1.2;
 }
 
-.detail-card a {
-    color: #2980b9;
-    word-break: break-all;
-}
-
 .detail-chips {
     display: flex;
     flex-wrap: wrap;
@@ -162,6 +157,11 @@ body {
 .chip-time {
     background: #eef1f4;
     color: #344;
+}
+
+.chip-rating {
+    background: #fff6e0;
+    color: #9a6a00;
 }
 
 .chip-open {
@@ -202,6 +202,48 @@ body {
     background: #f1f3f5;
     color: #455;
     font-size: 13px;
+}
+
+.cennik-lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid #eef1f4;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.cennik-lista li {
+    padding: 9px 12px;
+    font-size: 13px;
+    color: #344;
+    line-height: 1.4;
+}
+
+.cennik-lista li:nth-child(odd) {
+    background: #f8f9fa;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 8px;
+    font-size: 14px;
+}
+
+.info-row:last-child {
+    margin-bottom: 0;
+}
+
+.info-label {
+    color: #5a6b7b;
+    white-space: nowrap;
+}
+
+.detail-card a {
+    color: #2f6fed;
+    word-break: break-all;
 }
 
 .harmonogram-loading {
