@@ -64,10 +64,18 @@ export function renderScheduleTable(container, sloty) {
         ? kluczDzis()
         : (dniZDanymi[0] || kluczDzis());
 
+    // Tory numerujemy od 1 do najwyższego numeru występującego w danych — dzięki
+    // temu tory bez żadnego zajętego slotu (np. Tor 3) i tak pokazują się jako
+    // w pełni wolne, zamiast znikać.
     function toryDlaSekcji(sekcja) {
-        return Array.from(new Set(
-            sloty.filter(s => s.sekcja === sekcja).map(s => s.tor)
-        )).sort((a, b) => a - b);
+        const numery = sloty
+            .filter(s => s.sekcja === sekcja && Number.isFinite(s.tor))
+            .map(s => s.tor);
+        if (numery.length === 0) {
+            return [];
+        }
+        const max = Math.max(...numery);
+        return Array.from({ length: max }, (_, i) => i + 1);
     }
 
     function rysujTor(tor) {

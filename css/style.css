@@ -204,24 +204,37 @@ body {
     font-size: 13px;
 }
 
-.cennik-lista {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+.cennik-tabela {
+    width: 100%;
+    border-collapse: collapse;
     border: 1px solid #eef1f4;
     border-radius: 10px;
     overflow: hidden;
-}
-
-.cennik-lista li {
-    padding: 9px 12px;
     font-size: 13px;
-    color: #344;
-    line-height: 1.4;
 }
 
-.cennik-lista li:nth-child(odd) {
+.cennik-tabela td {
+    padding: 9px 12px;
+    line-height: 1.4;
+    vertical-align: top;
+}
+
+.cennik-tabela tr:nth-child(odd) {
     background: #f8f9fa;
+}
+
+.cennik-tabela tr + tr td {
+    border-top: 1px solid #eef1f4;
+}
+
+.cennik-etykieta {
+    color: #5a6b7b;
+}
+
+.cennik-cena {
+    text-align: right;
+    font-weight: 600;
+    color: #1c2733;
 }
 
 .info-row {

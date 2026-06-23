@@ -12,7 +12,15 @@ let userLocation = null;
 let openNowOnly = false;
 
 function waitForMapLoad() {
-    return new Promise(resolve => map.on('load', resolve));
+    return new Promise(resolve => {
+        // Mapa mogła się już załadować zanim podepniemy listener — wtedy zdarzenie
+        // 'load' już nie wystąpi, więc sprawdzamy stan i nie czekamy w nieskończoność.
+        if (map.loaded()) {
+            resolve();
+        } else {
+            map.once('load', resolve);
+        }
+    });
 }
 
 function updateOfflineBanner() {
@@ -50,26 +58,42 @@ function renderChipy(place) {
     return `<div class="detail-chips">${chipy.join('')}</div>`;
 }
 
-// Cennik to swobodny tekst; rozbijamy na pozycje po nowych liniach lub kropkach,
-// żeby pokazać go jako czytelną listę zamiast jednego bloku.
+// Cennik to swobodny tekst. Rozbijamy go na pozycje (po nowych liniach lub
+// kropkach) i z każdej wydzielamy etykietę oraz cenę, by pokazać czytelną tabelę.
+function pozycjaCennika(item) {
+    const dwukropek = item.indexOf(':');
+    if (dwukropek !== -1) {
+        return { etykieta: item.slice(0, dwukropek).trim(), cena: item.slice(dwukropek + 1).trim() };
+    }
+
+    const cena = item.match(/(?:od\s*)?\d[\d\s–-]*z[łl][^,.;]*/i);
+    if (cena) {
+        const etykieta = item.slice(0, cena.index).replace(/[–-]\s*$/, '').trim();
+        return { etykieta: etykieta || item.trim(), cena: cena[0].trim() };
+    }
+
+    return { etykieta: item.trim(), cena: '' };
+}
+
 function renderCennik(cennik) {
     if (brak(cennik)) {
         return '';
     }
 
-    const pozycje = String(cennik)
+    const wiersze = String(cennik)
         .split(/\n|(?<=\.)\s+/)
-        .map(l => l.trim())
-        .filter(Boolean);
-
-    const lista = pozycje
-        .map(p => `<li>${escapeHtml(p)}</li>`)
+        .map(l => l.trim().replace(/\.$/, ''))
+        .filter(Boolean)
+        .map(item => {
+            const { etykieta, cena } = pozycjaCennika(item);
+            return `<tr><td class="cennik-etykieta">${escapeHtml(etykieta)}</td><td class="cennik-cena">${escapeHtml(cena)}</td></tr>`;
+        })
         .join('');
 
     return `
         <div class="detail-section">
             <h4 class="section-title">Cennik</h4>
-            <ul class="cennik-lista">${lista}</ul>
+            <table class="cennik-tabela"><tbody>${wiersze}</tbody></table>
         </div>
     `;
 }
