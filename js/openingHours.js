@@ -15,37 +15,86 @@ function dayRangeIncludes(fromDay, toDay, day) {
     return day >= fromDay || day <= toDay;
 }
 
-function parseSegment(segment) {
-    const timeMatch = segment.match(TIME_RE);
-    if (!timeMatch) {
+function fmtMinutes(minutes) {
+    return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
+// Wyciąga wiodący zakres dni z fragmentu (np. "Pn-Pt", "Sob", "Śr").
+// Zwraca { fromDay, toDay } lub null, gdy fragment nie zaczyna się od nazwy dnia.
+function parseDayRange(text) {
+    const match = text.match(DAY_RANGE_RE);
+    if (!match) {
         return null;
     }
 
-    const [, fromH, fromM, toH, toM] = timeMatch;
-    const dayMatch = segment.match(DAY_RANGE_RE);
-    let fromDay;
-    let toDay;
-
-    if (dayMatch) {
-        const fromAlias = DAY_ALIASES[dayMatch[1].toLowerCase()];
-        const toAlias = dayMatch[2] ? DAY_ALIASES[dayMatch[2].toLowerCase()] : undefined;
-
-        if (fromAlias !== undefined) {
-            fromDay = fromAlias;
-            toDay = toAlias;
-        }
+    const fromDay = DAY_ALIASES[match[1].toLowerCase()];
+    if (fromDay === undefined) {
+        return null;
     }
 
-    return {
-        fromDay,
-        toDay,
-        fromMinutes: Number(fromH) * 60 + Number(fromM),
-        toMinutes: Number(toH) * 60 + Number(toM)
-    };
+    const toDay = match[2] ? DAY_ALIASES[match[2].toLowerCase()] : undefined;
+    return { fromDay, toDay };
 }
 
-function fmtMinutes(minutes) {
-    return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+// Rozbija swobodny tekst godzin na segmenty { fromDay, toDay, fromMinutes, toMinutes }.
+// Obsługuje wzorce, w których kilka dni dzieli wspólny zakres godzin zapisany po
+// przecinku, np. "Pn-Śr, Pt-Nd 06:00-22:00" albo "Pn, Śr, Pt 07:00-18:00" —
+// godzina z danego fragmentu obejmuje też poprzedzające go fragmenty złożone
+// z samych nazw dni. Fragmenty oznaczone jako "zamknięte" pomijamy.
+function parseGodziny(godziny) {
+    if (!godziny || typeof godziny !== 'string') {
+        return [];
+    }
+
+    const segments = [];
+    let pendingDays = [];
+
+    for (const rawPart of godziny.split(',')) {
+        const part = rawPart.trim();
+        if (!part || /zamkni/i.test(part)) {
+            continue;
+        }
+
+        const timeMatch = part.match(TIME_RE);
+        const dayRange = parseDayRange(part);
+
+        if (!timeMatch) {
+            // Fragment z samą nazwą dnia — czeka na wspólną godzinę z kolejnego fragmentu.
+            if (dayRange) {
+                pendingDays.push(dayRange);
+            }
+            continue;
+        }
+
+        const fromMinutes = Number(timeMatch[1]) * 60 + Number(timeMatch[2]);
+        const toMinutes = Number(timeMatch[3]) * 60 + Number(timeMatch[4]);
+
+        let ranges;
+        if (dayRange) {
+            ranges = [...pendingDays, dayRange];
+        } else if (pendingDays.length) {
+            ranges = pendingDays;
+        } else {
+            ranges = [null]; // brak nazw dni -> zakres obowiązuje codziennie
+        }
+
+        for (const range of ranges) {
+            segments.push({
+                fromDay: range ? range.fromDay : undefined,
+                toDay: range ? range.toDay : undefined,
+                fromMinutes,
+                toMinutes
+            });
+        }
+        pendingDays = [];
+    }
+
+    return segments;
+}
+
+function segmentMatchesDay(segment, day) {
+    return segment.fromDay === undefined
+        || dayRangeIncludes(segment.fromDay, segment.toDay, day);
 }
 
 /**
@@ -53,23 +102,12 @@ function fmtMinutes(minutes) {
  * nie można ustalić (brak danych lub nierozpoznany format).
  */
 export function getTodayHours(godziny, now = new Date()) {
-    if (!godziny || typeof godziny !== 'string') {
-        return null;
-    }
-
     const day = now.getDay();
 
-    for (const segment of godziny.split(',')) {
-        const parsed = parseSegment(segment.trim());
-        if (!parsed) {
-            continue;
+    for (const segment of parseGodziny(godziny)) {
+        if (segmentMatchesDay(segment, day)) {
+            return `${fmtMinutes(segment.fromMinutes)}–${fmtMinutes(segment.toMinutes)}`;
         }
-
-        if (parsed.fromDay !== undefined && !dayRangeIncludes(parsed.fromDay, parsed.toDay, day)) {
-            continue;
-        }
-
-        return `${fmtMinutes(parsed.fromMinutes)}–${fmtMinutes(parsed.toMinutes)}`;
     }
 
     return null;
@@ -81,11 +119,7 @@ export function getTodayHours(godziny, now = new Date()) {
  * can treat unknown status as "don't filter out" rather than "closed".
  */
 export function isOpenNow(godziny, now = new Date()) {
-    if (!godziny || typeof godziny !== 'string') {
-        return null;
-    }
-
-    const segments = godziny.split(',').map(part => parseSegment(part.trim())).filter(Boolean);
+    const segments = parseGodziny(godziny);
 
     if (segments.length === 0) {
         return null;
@@ -95,7 +129,7 @@ export function isOpenNow(godziny, now = new Date()) {
     const minutes = now.getHours() * 60 + now.getMinutes();
 
     return segments.some(segment => {
-        if (segment.fromDay !== undefined && !dayRangeIncludes(segment.fromDay, segment.toDay, day)) {
+        if (!segmentMatchesDay(segment, day)) {
             return false;
         }
 
