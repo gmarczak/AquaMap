@@ -85,7 +85,7 @@ export function isOpenNow(godziny, now = new Date()) {
         return null;
     }
 
-    const segments = godziny.split(',').map(parseSegment).filter(Boolean);
+    const segments = godziny.split(',').map(part => parseSegment(part.trim())).filter(Boolean);
 
     if (segments.length === 0) {
         return null;

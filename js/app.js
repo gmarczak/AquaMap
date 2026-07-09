@@ -18,9 +18,15 @@ function waitForMapLoad() {
         // 'load' już nie wystąpi, więc sprawdzamy stan i nie czekamy w nieskończoność.
         if (map.loaded()) {
             resolve();
-        } else {
-            map.once('load', resolve);
+            return;
         }
+        // Awaryjny timeout: gdyby mapa nie zainicjowała się (np. brak WebGL),
+        // nie blokujemy w nieskończoność ładowania listy basenów.
+        const timer = setTimeout(resolve, 4000);
+        map.once('load', () => {
+            clearTimeout(timer);
+            resolve();
+        });
     });
 }
 
@@ -162,6 +168,9 @@ async function showDetails(place) {
     document.getElementById('list-view').classList.add('hidden');
     document.getElementById('details-view').classList.remove('hidden');
     document.getElementById('back-button').textContent = `← ${place.nazwa}`;
+    // Na telefonie rozwiń panel do górnego snapu, by szczegóły zajęły większość ekranu.
+    setSheetHeightVh(SHEET_SNAP_VH[2]);
+    document.getElementById('sidebar').scrollTop = 0;
 
     const content = document.getElementById('details-content');
     content.innerHTML = `
@@ -200,6 +209,8 @@ function showList() {
     document.getElementById('details-view').classList.add('hidden');
     document.getElementById('list-view').classList.remove('hidden');
     document.getElementById('back-button').textContent = '← Wstecz';
+    // Na telefonie zwiń panel z powrotem do wysokości domyślnej (widok mapy + lista).
+    setSheetHeightVh(SHEET_SNAP_VH[1]);
     // Przewiń panel z powrotem na górę po powrocie do listy
     document.getElementById('sidebar').scrollTop = 0;
 }
@@ -208,10 +219,30 @@ function applySearchFilter() {
     const searchInput = /** @type {HTMLInputElement} */ (document.getElementById('search-input'));
     const query = searchInput.value.trim().toLowerCase();
 
+    let widoczne = 0;
     /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.place-item')).forEach(item => {
         const matches = (item.dataset.name || '').includes(query);
         item.style.display = matches ? '' : 'none';
+        if (matches) {
+            widoczne += 1;
+        }
     });
+
+    // Komunikat, gdy wpisano frazę, ale nic nie pasuje.
+    const list = document.getElementById('places-list');
+    let empty = document.getElementById('search-empty');
+    if (query && widoczne === 0) {
+        if (!empty) {
+            empty = document.createElement('li');
+            empty.id = 'search-empty';
+            empty.className = 'places-info';
+            empty.textContent = 'Brak basenów pasujących do wyszukiwania.';
+            list.appendChild(empty);
+        }
+        empty.style.display = '';
+    } else if (empty) {
+        empty.style.display = 'none';
+    }
 }
 
 function setActivePlace(activeItem) {
@@ -272,7 +303,25 @@ function hideLocationBanner() {
 
 // Dolny panel na telefonach jako "bottom sheet": przeciągnięcie uchwytu zmienia
 // wysokość panelu i po puszczeniu chwyta najbliższy z punktów zatrzaśnięcia.
-const SHEET_SNAP_VH = [14, 38, 86];
+const SHEET_SNAP_VH = [14, 38, 92];
+
+// Czy jesteśmy w układzie mobilnym (bottom-sheet). Na desktopie sidebar ma stałą
+// szerokość i pełną wysokość, więc nie ustawiamy mu wysokości w vh.
+function isMobileSheet() {
+    return window.matchMedia('(max-width: 768px)').matches;
+}
+
+// Płynnie ustawia wysokość dolnego panelu do zadanego punktu (w vh). Mapa (flex:1)
+// przelicza swój rozmiar automatycznie dzięki ResizeObserverowi z initMap.
+function setSheetHeightVh(vh) {
+    if (!isMobileSheet()) {
+        return;
+    }
+    const sidebar = document.getElementById('sidebar');
+    sidebar.style.transition = 'height 0.3s cubic-bezier(0.2, 0, 0, 1)';
+    sidebar.style.height = `${vh}vh`;
+    window.setTimeout(() => { sidebar.style.transition = ''; }, 320);
+}
 
 function setupSheetDrag() {
     const sidebar = document.getElementById('sidebar');
