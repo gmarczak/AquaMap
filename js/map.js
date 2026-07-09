@@ -36,6 +36,20 @@ export function initMap(containerId) {
     });
     map.addControl(geolocateControl);
 
+    // Mapbox ustala rozmiar canvasu w chwili tworzenia mapy. Na mobile kontener
+    // flex (#map) czesto nie ma jeszcze finalnej wysokosci, przez co canvas jest
+    // za maly i pojawia sie szare puste pole ponizej kafelkow. Wymuszamy
+    // przeliczenie rozmiaru po zaladowaniu oraz przy kazdej zmianie wymiarow
+    // kontenera (obrot ekranu, pasek adresu iOS, przelaczanie lista/szczegoly).
+    map.on('load', () => map.resize());
+
+    const container = map.getContainer();
+    if (typeof ResizeObserver !== 'undefined') {
+        new ResizeObserver(() => map.resize()).observe(container);
+    } else {
+        window.addEventListener('resize', () => map.resize());
+    }
+
     return map;
 }
 
