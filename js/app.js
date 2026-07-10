@@ -4,13 +4,62 @@ import { renderScheduleTable } from './schedule.js';
 import { isOpenNow, getTodayHours } from './openingHours.js';
 import { distanceKm } from './geo.js';
 import { safeUrl } from './utils.js';
+import { setupAuthUI } from './authUI.js';
+import { onAuthChange, getProfile } from './auth.js';
+import { setupEditUI, openEditModal } from './editUI.js';
+import { setupAddPlaceUI, startAddPlace } from './addPlaceUI.js';
+import { setupModerationUI, openModerationPanel } from './moderationUI.js';
+import { setupScheduleUI, openScheduleEditor } from './scheduleEditUI.js';
+import { setupTrainingsUI, openTrainings } from './trainingsUI.js';
+import { handleStravaRedirect } from './strava.js';
 
 initMap('map');
+setupAuthUI();
+setupEditUI();
+setupAddPlaceUI();
+setupModerationUI();
+setupScheduleUI();
+setupTrainingsUI();
+
+document.getElementById('add-place-btn').addEventListener('click', startAddPlace);
+document.getElementById('mod-btn').addEventListener('click', openModerationPanel);
+document.getElementById('trainings-btn').addEventListener('click', () => {
+    document.getElementById('account-menu').classList.add('hidden');
+    openTrainings();
+});
+
+// Powrót z autoryzacji Strava (?code=...): wymiana kodu, sync, pokaż treningi.
+(async () => {
+    try {
+        if (await handleStravaRedirect()) {
+            openTrainings();
+        }
+    } catch (error) {
+        console.error('Strava:', error);
+    }
+})();
 
 let allPlaces = [];
 let userLocation = null;
 let openNowOnly = false;
+let currentUser = null;
 const placeItems = new Map();
+
+// Śledzimy stan logowania: „Dodaj basen" widoczne dla zalogowanych, „Moderacja"
+// tylko dla moderatorów (trusted/admin). „Zaproponuj poprawkę" — patrz szczegóły.
+onAuthChange(async user => {
+    currentUser = user;
+    const addBtn = document.getElementById('add-place-btn');
+    const modBtn = document.getElementById('mod-btn');
+    addBtn.classList.toggle('hidden', !user);
+    if (user) {
+        const profile = await getProfile(user.id);
+        const isModerator = profile && (profile.role === 'trusted' || profile.role === 'admin');
+        modBtn.classList.toggle('hidden', !isModerator);
+    } else {
+        modBtn.classList.add('hidden');
+    }
+});
 
 function waitForMapLoad() {
     return new Promise(resolve => {
@@ -164,6 +213,20 @@ function renderInfo(place) {
     `;
 }
 
+// Akcje społecznościowe w szczegółach — „Zaproponuj poprawkę" dla zalogowanych,
+// zachęta do logowania dla gości.
+function renderContributeFooter() {
+    if (!currentUser) {
+        return '<div class="detail-contribute"><button type="button" id="login-to-edit-btn" class="btn-secondary">Zaloguj się, aby zgłosić poprawkę</button></div>';
+    }
+    return `
+        <div class="detail-contribute">
+            <button type="button" id="propose-edit-btn" class="btn-secondary">✏️ Zaproponuj poprawkę</button>
+            <button type="button" id="edit-schedule-btn" class="btn-secondary">🛠️ Edytuj harmonogram</button>
+        </div>
+    `;
+}
+
 async function showDetails(place) {
     document.getElementById('list-view').classList.add('hidden');
     document.getElementById('details-view').classList.remove('hidden');
@@ -183,8 +246,22 @@ async function showDetails(place) {
             </div>
             ${renderCennik(place.cennik)}
             ${renderInfo(place)}
+            ${renderContributeFooter()}
         </div>
     `;
+
+    const editBtn = document.getElementById('propose-edit-btn');
+    if (editBtn) {
+        editBtn.addEventListener('click', () => openEditModal(place));
+    }
+    const scheduleBtn = document.getElementById('edit-schedule-btn');
+    if (scheduleBtn) {
+        scheduleBtn.addEventListener('click', () => openScheduleEditor(place));
+    }
+    const loginBtn = document.getElementById('login-to-edit-btn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', () => document.getElementById('account-btn').click());
+    }
 
     const harmonogramContainer = document.getElementById('harmonogram-container');
 
@@ -500,7 +577,9 @@ window.addEventListener('offline', updateOfflineBanner);
 
 startApp();
 
-if ('serviceWorker' in navigator) {
+// Service worker rejestrujemy tylko w wersji produkcyjnej. W trybie dev powodował
+// serwowanie starego index.html/JS z cache (mylące „nic się nie zmienia").
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').then(registration => {
             console.log('PWA: serviceworker zarejstrowany', registration);

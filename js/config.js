@@ -9,3 +9,6 @@ function requiredEnv(name, value) {
 export const MAPBOX_ACCESS_TOKEN = requiredEnv('VITE_MAPBOX_ACCESS_TOKEN', import.meta.env.VITE_MAPBOX_ACCESS_TOKEN);
 export const SUPABASE_URL = requiredEnv('VITE_SUPABASE_URL', import.meta.env.VITE_SUPABASE_URL);
 export const SUPABASE_ANON_KEY = requiredEnv('VITE_SUPABASE_ANON_KEY', import.meta.env.VITE_SUPABASE_ANON_KEY);
+
+// Opcjonalne — połączenie ze Strava aktywuje się dopiero po ustawieniu tej zmiennej.
+export const STRAVA_CLIENT_ID = import.meta.env.VITE_STRAVA_CLIENT_ID || null;

@@ -26,12 +26,25 @@
             </svg>
             <h1>AquaMap</h1>
         </div>
+        <button id="account-btn" class="account-btn" type="button">Zaloguj</button>
+        <div id="account-menu" class="account-menu hidden">
+            <div id="account-name" class="account-name"></div>
+            <div id="account-level" class="account-level"></div>
+            <button id="trainings-btn" class="account-action" type="button">🏊 Moje treningi</button>
+            <button id="logout-btn" class="account-action" type="button">Wyloguj</button>
+        </div>
     </div>
     <div id="content">
         <div id="sidebar">
             <div id="list-view">
                 <div class="sheet-handle" id="sheet-handle" aria-hidden="true"></div>
-                <h2 class="list-title">Baseny</h2>
+                <div class="list-head">
+                    <h2 class="list-title">Baseny</h2>
+                    <div class="list-actions">
+                        <button id="mod-btn" class="pill-btn hidden" type="button">🛡️ Moderacja</button>
+                        <button id="add-place-btn" class="pill-btn hidden" type="button">➕ Dodaj basen</button>
+                    </div>
+                </div>
                 <div id="location-banner" class="location-banner hidden">
                     <span>📍 Włącz lokalizację, aby zobaczyć odległości.</span>
                     <button id="location-banner-close" aria-label="Zamknij">&times;</button>
@@ -59,6 +72,111 @@
             </div>
         </div>
         <div id="map"></div>
+    </div>
+    <div id="auth-modal" class="modal-backdrop hidden">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+            <button id="auth-modal-close" class="modal-close" type="button" aria-label="Zamknij">&times;</button>
+            <h2 id="auth-modal-title" class="modal-title">Zaloguj się</h2>
+            <p class="modal-sub">Zaloguj się, aby zgłaszać i poprawiać baseny.</p>
+            <button id="google-btn" class="btn-google" type="button">
+                <span aria-hidden="true">G</span> Kontynuuj z Google
+            </button>
+            <div class="modal-divider"><span>albo</span></div>
+            <form id="magic-form" class="magic-form">
+                <input type="email" id="magic-email" placeholder="twój@email.pl" required autocomplete="email">
+                <button type="submit" class="btn-primary">Wyślij link logowania</button>
+            </form>
+            <p id="auth-msg" class="auth-msg" role="status"></p>
+        </div>
+    </div>
+    <div id="edit-modal" class="modal-backdrop hidden">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+            <button id="edit-modal-close" class="modal-close" type="button" aria-label="Zamknij">&times;</button>
+            <h2 id="edit-modal-title" class="modal-title">Zaproponuj poprawkę</h2>
+            <p class="modal-sub" id="edit-modal-place"></p>
+            <form id="edit-form" class="labeled-form">
+                <label>Godziny
+                    <input type="text" id="edit-godziny" placeholder="np. Pn-Pt 06:00-22:00, Sob-Nd 08:00-20:00">
+                </label>
+                <label>Cennik
+                    <textarea id="edit-cennik" rows="3" placeholder="np. Bilet 1h: 22 zł"></textarea>
+                </label>
+                <label>Strona
+                    <input type="url" id="edit-strona" placeholder="https://...">
+                </label>
+                <button type="submit" class="btn-primary">Wyślij zgłoszenie</button>
+            </form>
+            <p id="edit-msg" class="auth-msg" role="status"></p>
+        </div>
+    </div>
+    <div id="add-modal" class="modal-backdrop hidden">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="add-modal-title">
+            <button id="add-modal-close" class="modal-close" type="button" aria-label="Zamknij">&times;</button>
+            <h2 id="add-modal-title" class="modal-title">Dodaj basen</h2>
+            <p class="modal-sub" id="add-coords"></p>
+            <form id="add-form" class="labeled-form">
+                <label>Nazwa
+                    <input type="text" id="add-nazwa" required placeholder="np. Pływalnia Miejska">
+                </label>
+                <label>Godziny
+                    <input type="text" id="add-godziny" placeholder="Pn-Pt 06:00-22:00, Sob-Nd 08:00-20:00">
+                </label>
+                <label>Cennik
+                    <textarea id="add-cennik" rows="2" placeholder="np. Bilet 1h: 22 zł"></textarea>
+                </label>
+                <label>Strona
+                    <input type="url" id="add-strona" placeholder="https://...">
+                </label>
+                <label>Liczba torów
+                    <input type="number" id="add-tory" min="1" max="20" value="6">
+                </label>
+                <button type="submit" class="btn-primary">Wyślij zgłoszenie</button>
+            </form>
+            <p id="add-msg" class="auth-msg" role="status"></p>
+        </div>
+    </div>
+    <div id="mod-modal" class="modal-backdrop hidden">
+        <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="mod-modal-title">
+            <button id="mod-modal-close" class="modal-close" type="button" aria-label="Zamknij">&times;</button>
+            <h2 id="mod-modal-title" class="modal-title">Moderacja zgłoszeń</h2>
+            <div id="mod-list"></div>
+        </div>
+    </div>
+    <div id="schedule-modal" class="modal-backdrop hidden">
+        <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="sched-modal-title">
+            <button id="sched-modal-close" class="modal-close" type="button" aria-label="Zamknij">&times;</button>
+            <h2 id="sched-modal-title" class="modal-title">Edytuj harmonogram</h2>
+            <p class="modal-sub" id="sched-place"></p>
+            <p class="modal-sub">Dodaj przedziały, w których tor jest zajęty (zajęcia/klub).</p>
+            <div class="sched-add-row">
+                <select id="sched-dzien" aria-label="Dzień"></select>
+                <input id="sched-tor" type="number" min="1" max="20" placeholder="Tor" aria-label="Tor">
+                <input id="sched-od" type="time" aria-label="Od">
+                <input id="sched-do" type="time" aria-label="Do">
+                <button type="button" id="sched-add" class="btn-secondary">Dodaj</button>
+            </div>
+            <div id="sched-entries"></div>
+            <form id="schedule-form" class="labeled-form" style="margin-top: 14px;">
+                <label class="sched-check">
+                    <input type="checkbox" id="sched-replace"> Zastąp cały dotychczasowy harmonogram
+                </label>
+                <button type="submit" class="btn-primary">Wyślij zgłoszenie</button>
+            </form>
+            <p id="sched-msg" class="auth-msg" role="status"></p>
+        </div>
+    </div>
+    <div id="trainings-modal" class="modal-backdrop hidden">
+        <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="trainings-title">
+            <button id="trainings-close" class="modal-close" type="button" aria-label="Zamknij">&times;</button>
+            <h2 id="trainings-title" class="modal-title">Moje treningi</h2>
+            <p class="modal-sub">Połącz Strava, aby zbierać EXP za treningi pływackie.</p>
+            <div class="train-actions">
+                <button id="strava-connect-btn" class="btn-secondary" type="button">Połącz ze Strava</button>
+                <button id="strava-sync-btn" class="btn-primary" type="button">Synchronizuj</button>
+            </div>
+            <p id="trainings-msg" class="auth-msg" role="status"></p>
+            <div id="trainings-list"></div>
+        </div>
     </div>
     <!-- scripts -->
     <script type="module" src="/js/app.js"></script>
