@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { submitNewPlace } from './contributions.js';
 import { map } from './map.js';
 

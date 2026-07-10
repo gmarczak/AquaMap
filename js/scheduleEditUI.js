@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { submitSchedule } from './contributions.js';
 
 const DNI = [

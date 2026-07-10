@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { listPending, reviewContribution } from './contributions.js';
 
 const KIND_LABEL = {

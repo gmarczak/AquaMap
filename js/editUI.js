@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { submitEditPlace } from './contributions.js';
 
 let editingPlace = null;

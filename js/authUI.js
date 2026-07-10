@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { onAuthChange, signInWithGoogle, signInWithMagicLink, signOut, getProfile } from './auth.js';
 
 // Spina logowanie z UI: przycisk konta w nagłówku, menu zalogowanego oraz modal

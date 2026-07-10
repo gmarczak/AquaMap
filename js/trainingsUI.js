@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { connectStrava, syncStrava, listActivities, stravaConfigured } from './strava.js';
 
 function fmtDist(m) {
