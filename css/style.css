@@ -1385,3 +1385,130 @@ body {
     margin: 4px 0;
     border-radius: 8px;
 }
+
+/* Profil: poziom, statystyki, odznaki, ranking */
+
+.profile-head {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.profile-name {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ink);
+}
+
+.profile-level {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 2px 0 8px;
+}
+
+.level-bar {
+    height: 10px;
+    background: var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.level-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+}
+
+.level-hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+}
+
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 14px 0;
+    text-align: center;
+}
+
+.profile-stats div {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 4px;
+}
+
+.profile-stats strong {
+    display: block;
+    font-size: 18px;
+    color: var(--ink);
+}
+
+.profile-stats span {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.badge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 6px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 11px;
+    text-align: center;
+    color: var(--ink);
+}
+
+.badge-icon {
+    font-size: 22px;
+}
+
+.badge-locked {
+    opacity: 0.35;
+    filter: grayscale(1);
+}
+
+.leaderboard {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.lb-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.lb-rank {
+    width: 20px;
+    font-weight: 800;
+    color: var(--accent);
+}
+
+.lb-name {
+    flex: 1;
+    font-weight: 600;
+}
+
+.lb-xp {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+}

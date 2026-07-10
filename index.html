@@ -30,6 +30,7 @@
         <div id="account-menu" class="account-menu hidden">
             <div id="account-name" class="account-name"></div>
             <div id="account-level" class="account-level"></div>
+            <button id="profile-btn" class="account-action" type="button">🏆 Profil</button>
             <button id="trainings-btn" class="account-action" type="button">🏊 Moje treningi</button>
             <button id="logout-btn" class="account-action" type="button">Wyloguj</button>
         </div>
@@ -176,6 +177,13 @@
             </div>
             <p id="trainings-msg" class="auth-msg" role="status"></p>
             <div id="trainings-list"></div>
+        </div>
+    </div>
+    <div id="profile-modal" class="modal-backdrop hidden">
+        <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+            <button id="profile-close" class="modal-close" type="button" aria-label="Zamknij">&times;</button>
+            <h2 id="profile-title" class="modal-title">Profil</h2>
+            <div id="profile-body"></div>
         </div>
     </div>
     <!-- scripts -->

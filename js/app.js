@@ -13,6 +13,7 @@ import { setupScheduleUI, openScheduleEditor } from './scheduleEditUI.js';
 import { setupTrainingsUI, openTrainings } from './trainingsUI.js';
 import { handleStravaRedirect } from './strava.js';
 import { renderPhotos } from './photosUI.js';
+import { setupProfileUI, openProfile } from './profileUI.js';
 
 initMap('map');
 setupAuthUI();
@@ -21,12 +22,17 @@ setupAddPlaceUI();
 setupModerationUI();
 setupScheduleUI();
 setupTrainingsUI();
+setupProfileUI();
 
 document.getElementById('add-place-btn').addEventListener('click', startAddPlace);
 document.getElementById('mod-btn').addEventListener('click', openModerationPanel);
 document.getElementById('trainings-btn').addEventListener('click', () => {
     document.getElementById('account-menu').classList.add('hidden');
     openTrainings();
+});
+document.getElementById('profile-btn').addEventListener('click', () => {
+    document.getElementById('account-menu').classList.add('hidden');
+    openProfile();
 });
 
 // Powrót z autoryzacji Strava (?code=...): wymiana kodu, sync, pokaż treningi.
