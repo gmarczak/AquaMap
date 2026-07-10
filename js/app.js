@@ -500,7 +500,7 @@ function setupSheetDrag() {
 
     // Lista: zapamiętaj start dotyku, gdy jest przewinięta na samą górę.
     sidebar.addEventListener('pointerdown', event => {
-        if (!isMobileSheet() || handle.contains(event.target)) {
+        if (!isMobileSheet() || handle.contains(/** @type {Node} */ (event.target))) {
             return;
         }
         pendingY = sidebar.scrollTop <= 0 ? event.clientY : null;
