@@ -35,6 +35,15 @@ document.getElementById('profile-btn').addEventListener('click', () => {
     openProfile();
 });
 
+// Esc zamyka otwarte modale i menu konta.
+document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') {
+        return;
+    }
+    document.querySelectorAll('.modal-backdrop:not(.hidden)').forEach(m => m.classList.add('hidden'));
+    document.getElementById('account-menu').classList.add('hidden');
+});
+
 // Powrót z autoryzacji Strava (?code=...): wymiana kodu, sync, pokaż treningi.
 (async () => {
     try {
@@ -415,56 +424,120 @@ function setupSheetDrag() {
     const handle = document.getElementById('sheet-handle');
 
     let dragging = false;
+    let mode = null;       // 'handle' | 'list'
+    let pendingY = null;   // start dotyku na liście, zanim zdecydujemy, że to drag
     let startY = 0;
     let startHeightVh = SHEET_SNAP_VH[1];
+    let lastY = 0;
+    let lastT = 0;
+    let velocity = 0;      // vh/ms, dodatnie = ruch w górę
 
     function currentHeightVh() {
         return (sidebar.getBoundingClientRect().height / window.innerHeight) * 100;
     }
-
     function setHeightVh(value) {
         sidebar.style.height = `${value}vh`;
     }
 
-    function nearestSnap(value) {
-        return SHEET_SNAP_VH.reduce((a, b) => Math.abs(b - value) < Math.abs(a - value) ? b : a);
+    // Inercja: przy szybkim „rzucie" wybierz snap w kierunku ruchu, inaczej najbliższy.
+    function chooseSnap(value) {
+        const sorted = [...SHEET_SNAP_VH].sort((a, b) => a - b);
+        if (velocity > 0.05) {
+            return sorted.find(s => s > value + 1) ?? sorted[sorted.length - 1];
+        }
+        if (velocity < -0.05) {
+            return [...sorted].reverse().find(s => s < value - 1) ?? sorted[0];
+        }
+        return sorted.reduce((a, b) => Math.abs(b - value) < Math.abs(a - value) ? b : a);
     }
 
-    handle.addEventListener('pointerdown', event => {
+    function begin(clientY) {
         dragging = true;
-        startY = event.clientY;
+        startY = clientY;
+        lastY = clientY;
+        lastT = performance.now();
+        velocity = 0;
         startHeightVh = currentHeightVh();
         sidebar.style.transition = 'none';
-        handle.setPointerCapture(event.pointerId);
-    });
+    }
 
-    handle.addEventListener('pointermove', event => {
-        if (!dragging) {
-            return;
+    function moveTo(clientY) {
+        const now = performance.now();
+        const dt = now - lastT;
+        if (dt > 0) {
+            velocity = (((lastY - clientY) / window.innerHeight) * 100) / dt;
         }
-        const deltaVh = ((startY - event.clientY) / window.innerHeight) * 100;
-        const next = Math.min(92, Math.max(10, startHeightVh + deltaVh));
-        setHeightVh(next);
+        lastY = clientY;
+        lastT = now;
+        const deltaVh = ((startY - clientY) / window.innerHeight) * 100;
+        setHeightVh(Math.min(92, Math.max(10, startHeightVh + deltaVh)));
         map.resize();
-    });
+    }
 
     function endDrag() {
+        pendingY = null;
         if (!dragging) {
             return;
         }
         dragging = false;
+        mode = null;
         sidebar.style.transition = 'height 0.25s cubic-bezier(0.2, 0, 0, 1)';
-        setHeightVh(nearestSnap(currentHeightVh()));
+        setHeightVh(chooseSnap(currentHeightVh()));
         map.resize();
         setTimeout(() => { sidebar.style.transition = ''; }, 260);
     }
 
-    handle.addEventListener('pointerup', endDrag);
-    handle.addEventListener('pointercancel', endDrag);
+    // Uchwyt: pełne przeciąganie w obu kierunkach.
+    handle.addEventListener('pointerdown', event => {
+        if (!isMobileSheet()) {
+            return;
+        }
+        mode = 'handle';
+        begin(event.clientY);
+        try { handle.setPointerCapture(event.pointerId); } catch { /* ignore */ }
+        event.preventDefault();
+    });
+
+    // Lista: zapamiętaj start dotyku, gdy jest przewinięta na samą górę.
+    sidebar.addEventListener('pointerdown', event => {
+        if (!isMobileSheet() || handle.contains(event.target)) {
+            return;
+        }
+        pendingY = sidebar.scrollTop <= 0 ? event.clientY : null;
+    });
+
+    // Wspólny ruch (zdarzenia z uchwytu bąbelkują do sidebara).
+    sidebar.addEventListener('pointermove', event => {
+        if (!isMobileSheet()) {
+            return;
+        }
+        if (dragging) {
+            moveTo(event.clientY);
+            if (mode === 'list') {
+                event.preventDefault();
+            }
+            return;
+        }
+        if (pendingY === null) {
+            return;
+        }
+        const dy = event.clientY - pendingY; // dodatnie = w dół
+        if (sidebar.scrollTop <= 0 && dy > 8) {
+            mode = 'list';
+            begin(pendingY);
+            try { sidebar.setPointerCapture(event.pointerId); } catch { /* ignore */ }
+            event.preventDefault();
+        } else if (dy < -4) {
+            pendingY = null; // ruch w górę = normalne przewijanie listy
+        }
+    });
+
+    sidebar.addEventListener('pointerup', endDrag);
+    sidebar.addEventListener('pointercancel', endDrag);
 }
 
 function getVisiblePlaces() {
-    let places = openNowOnly ? allPlaces.filter(place => isOpenNow(place.godziny) !== false) : allPlaces;
+    let places = openNowOnly ? allPlaces.filter(place => isOpenNow(place.godziny) === true) : allPlaces;
 
     if (userLocation) {
         places = [...places].sort((a, b) =>

@@ -9,6 +9,16 @@ function esc(s) {
     return d.innerHTML;
 }
 
+function roleBadge(role) {
+    if (role === 'admin') {
+        return '<span class="role-badge role-admin">🛡️ Admin</span>';
+    }
+    if (role === 'trusted') {
+        return '<span class="role-badge role-trusted">✓ Zaufany</span>';
+    }
+    return '';
+}
+
 async function render() {
     const body = document.getElementById('profile-body');
     body.innerHTML = '<p class="modal-sub">Ładowanie…</p>';
@@ -43,7 +53,7 @@ async function render() {
 
     body.innerHTML = `
         <div class="profile-head">
-            <div class="profile-name">${esc(profile?.display_name || user.email)}</div>
+            <div class="profile-name">${esc(profile?.display_name || user.email)} ${roleBadge(profile?.role)}</div>
             <div class="profile-level">Poziom ${prog.level} · ${prog.xp} EXP</div>
             <div class="level-bar"><div class="level-bar-fill" style="width:${prog.pct}%;"></div></div>
             <div class="level-hint">${prog.nextAt > prog.curFloor ? `${prog.nextAt - prog.xp} EXP do poziomu ${prog.level + 1}` : 'Maksymalny poziom'}</div>
