@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { listPending, reviewContribution } from './contributions.js';
+import { photoUrl } from './photos.js';
 
 const KIND_LABEL = {
     new_place: 'Nowy basen',
@@ -23,10 +24,13 @@ function renderPayload(payload) {
 }
 
 function renderItem(c) {
+    const body = (c.kind === 'photo' && c.payload && c.payload.storage_path)
+        ? `<img class="mod-photo" src="${esc(photoUrl(c.payload.storage_path))}" alt="Podgląd zdjęcia" loading="lazy">`
+        : `<div class="mod-payload">${renderPayload(c.payload)}</div>`;
     return `
         <div class="mod-item" data-id="${esc(c.id)}">
             <div class="mod-kind">${KIND_LABEL[c.kind] || esc(c.kind)}${c.place_id ? ` · basen #${esc(c.place_id)}` : ''}</div>
-            <div class="mod-payload">${renderPayload(c.payload)}</div>
+            ${body}
             <div class="mod-actions">
                 <button class="btn-approve" data-id="${esc(c.id)}" type="button">Zatwierdź</button>
                 <button class="btn-reject" data-id="${esc(c.id)}" type="button">Odrzuć</button>
@@ -73,6 +77,9 @@ export function setupModerationUI() {
         btn.disabled = true;
         try {
             await reviewContribution(btn.dataset.id, approve ? 'approved' : 'rejected');
+            if (approve) {
+                document.dispatchEvent(new CustomEvent('aquamap:places-changed'));
+            }
             await refresh();
         } catch (error) {
             btn.disabled = false;

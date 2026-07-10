@@ -5,6 +5,25 @@ export function stravaConfigured() {
     return !!STRAVA_CLIENT_ID;
 }
 
+// Lokalny znacznik połączenia ze Strava (do ukrycia przycisku „Połącz").
+const CONNECTED_KEY = 'aquamap-strava-connected';
+
+export function isStravaConnected() {
+    try {
+        return localStorage.getItem(CONNECTED_KEY) === '1';
+    } catch {
+        return false;
+    }
+}
+
+function markConnected() {
+    try {
+        localStorage.setItem(CONNECTED_KEY, '1');
+    } catch {
+        /* ignore */
+    }
+}
+
 // Przekierowanie na ekran autoryzacji Strava.
 export function connectStrava() {
     const redirect = window.location.origin;
@@ -40,8 +59,10 @@ export function exchangeCode(code) {
     return callFunction('strava-exchange', { code });
 }
 
-export function syncStrava() {
-    return callFunction('strava-sync', {});
+export async function syncStrava() {
+    const res = await callFunction('strava-sync', {});
+    markConnected();
+    return res;
 }
 
 export async function listActivities() {

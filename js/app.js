@@ -12,6 +12,7 @@ import { setupModerationUI, openModerationPanel } from './moderationUI.js';
 import { setupScheduleUI, openScheduleEditor } from './scheduleEditUI.js';
 import { setupTrainingsUI, openTrainings } from './trainingsUI.js';
 import { handleStravaRedirect } from './strava.js';
+import { renderPhotos } from './photosUI.js';
 
 initMap('map');
 setupAuthUI();
@@ -246,9 +247,12 @@ async function showDetails(place) {
             </div>
             ${renderCennik(place.cennik)}
             ${renderInfo(place)}
+            <div class="detail-section" id="photos-section"></div>
             ${renderContributeFooter()}
         </div>
     `;
+
+    renderPhotos(place, currentUser);
 
     const editBtn = document.getElementById('propose-edit-btn');
     if (editBtn) {
@@ -543,6 +547,19 @@ geolocateControl.on('geolocate', position => {
     hideLocationBanner();
     renderList();
 });
+
+// Ponowne pobranie basenów i odświeżenie mapy + listy — wołane po zatwierdzonym
+// zgłoszeniu (dodanie/edycja/moderacja), żeby zmiana pojawiła się bez F5.
+async function reloadPlaces() {
+    try {
+        allPlaces = await fetchPlaces();
+        setPlaces(allPlaces, place => selectPlace(place));
+        renderList();
+    } catch (error) {
+        console.error('Nie udało się odświeżyć basenów:', error);
+    }
+}
+document.addEventListener('aquamap:places-changed', reloadPlaces);
 
 async function startApp() {
     const listElement = document.getElementById('places-list');

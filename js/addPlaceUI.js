@@ -93,9 +93,12 @@ export function setupAddPlaceUI() {
         msg.textContent = 'Wysyłam…';
         try {
             const row = await submitNewPlace(payload);
-            msg.textContent = row.status === 'approved'
-                ? 'Dodano! Basen pojawi się po odświeżeniu mapy.'
-                : 'Dziękujemy! Zgłoszenie czeka na zatwierdzenie przez moderatora.';
+            if (row.status === 'approved') {
+                document.dispatchEvent(new CustomEvent('aquamap:places-changed'));
+                msg.textContent = 'Dodano! Basen jest już na mapie.';
+            } else {
+                msg.textContent = 'Dziękujemy! Zgłoszenie czeka na zatwierdzenie przez moderatora.';
+            }
         } catch (error) {
             msg.textContent = `Nie udało się wysłać: ${error.message || error}`;
         }

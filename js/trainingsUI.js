@@ -1,5 +1,16 @@
 // @ts-nocheck
-import { connectStrava, syncStrava, listActivities, stravaConfigured } from './strava.js';
+import { connectStrava, syncStrava, listActivities, stravaConfigured, isStravaConnected } from './strava.js';
+
+// Gdy konto jest już połączone ze Strava, chowamy przycisk „Połącz".
+function updateConnectUI(connected) {
+    document.getElementById('strava-connect-btn').classList.toggle('hidden', connected);
+    const sub = document.getElementById('trainings-sub');
+    if (sub) {
+        sub.textContent = connected
+            ? '✓ Połączono ze Strava. Kliknij „Synchronizuj", aby pobrać nowe treningi.'
+            : 'Połącz Strava, aby zbierać EXP za treningi pływackie.';
+    }
+}
 
 function fmtDist(m) {
     if (!m) {
@@ -34,6 +45,8 @@ async function refresh() {
     box.innerHTML = '<p class="modal-sub">Ładowanie…</p>';
     try {
         const acts = await listActivities();
+        // Połączony, jeśli mamy znacznik lokalny albo są już jakieś treningi.
+        updateConnectUI(isStravaConnected() || acts.length > 0);
         if (!acts.length) {
             box.innerHTML = '<p class="modal-sub">Brak treningów. Połącz konto Strava i kliknij „Synchronizuj".</p>';
             return;

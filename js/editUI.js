@@ -41,8 +41,13 @@ export function setupEditUI() {
 
         msg.textContent = 'Wysyłam…';
         try {
-            await submitEditPlace(editingPlace.id, payload);
-            msg.textContent = 'Dziękujemy! Zgłoszenie zapisane. Po zatwierdzeniu zmiana pojawi się na mapie.';
+            const row = await submitEditPlace(editingPlace.id, payload);
+            if (row?.status === 'approved') {
+                document.dispatchEvent(new CustomEvent('aquamap:places-changed'));
+                msg.textContent = 'Zapisano — zmiana jest już widoczna.';
+            } else {
+                msg.textContent = 'Dziękujemy! Zgłoszenie czeka na zatwierdzenie.';
+            }
         } catch (error) {
             msg.textContent = `Nie udało się wysłać: ${error.message || error}`;
         }
