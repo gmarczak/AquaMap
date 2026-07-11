@@ -28,8 +28,10 @@ harmonogramy.
   `auth*.js`, `contributions.js`, `moderationUI.js`, `strava.js`, `trainingsUI.js`,
   `gamification.js`, `photos*.js`, itd.)
 - `supabase/migrations/` — `0001` profile, `0002` contributions+moderacja,
-  `0003` harmonogramy, `0004` strava+xp, `0005` zdjęcia
-- `supabase/functions/` — `strava-exchange`, `strava-sync` (Edge Functions)
+  `0003` harmonogramy, `0004` strava+xp, `0005` zdjęcia, `0006` limity EXP,
+  `0007` rate-limit, `0008` auto-awans `trusted`
+- `supabase/functions/` — `strava-exchange`, `strava-sync`, `strava-webhook`
+  (Edge Functions)
 - `docs/` — PLAN + dokumenty SETUP (faza 0, faza 4)
 
 ## Produkcja
@@ -59,6 +61,14 @@ harmonogramy.
   `lanesForSection`) + zgłoszeń (`contributions`: insert/kind/payload, moderacja).
 - ⏳ Dalsze testy wymagające lokalnej bazy: `apply_contribution`, RLS (audyt);
   oraz wydzielenie testowalnej logiki z `app.js`.
+
+## P2 (rozpoczęte)
+- ✅ Auto-awans do `trusted` po 5 zatwierdzonych zgłoszeniach — migracja
+  `0008_auto_promote.sql`.
+- ✅ Webhook Strava (push zamiast ręcznego sync) — funkcja `strava-webhook`
+  + `docs/SETUP-webhook-strava.md` (deploy `--no-verify-jwt`, rejestracja
+  subskrypcji, sekret `STRAVA_VERIFY_TOKEN`).
+- ⏳ Pozostałe P2: Garmin, historia zmian, monitoring kosztów, a11y/UX.
 
 ## Zasady bezpieczeństwa danych
 - Klient nigdy nie pisze wprost do „żywych" danych ani nie widzi sekretów.

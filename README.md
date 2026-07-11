@@ -46,7 +46,8 @@ js/                 logika frontendu (app.js główny; map, schedule, auth*,
                     contributions, moderationUI, strava, trainingsUI, itd.)
 supabase/migrations/  0001 profile · 0002 contributions+moderacja · 0003 harmonogramy
                       0004 strava+xp · 0005 zdjęcia · 0006 limity EXP · 0007 rate-limit
-supabase/functions/   strava-exchange, strava-sync (Edge Functions, Deno)
+                      0008 auto-awans trusted
+supabase/functions/   strava-exchange, strava-sync, strava-webhook (Edge Functions, Deno)
 supabase/tests/       verify.sql — audyt RLS + test apply_contribution
 docs/                 PLAN + dokumenty SETUP
 ```
@@ -55,7 +56,7 @@ docs/                 PLAN + dokumenty SETUP
 
 ### 1. Baza (Supabase)
 
-Uruchom migracje `0001`–`0007` (SQL Editor → wklej pliki po kolei, lub
+Uruchom migracje `0001`–`0008` (SQL Editor → wklej pliki po kolei, lub
 `npx supabase db push`). W **Authentication → URL Configuration**:
 
 - **Site URL:** `https://aqua-map.vercel.app`
@@ -71,6 +72,10 @@ npx supabase functions deploy strava-exchange strava-sync
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` są dostępne w
 Edge Functions automatycznie.
+
+Opcjonalnie webhook (push treningów zamiast ręcznego sync) — patrz
+`docs/SETUP-webhook-strava.md`: `strava-webhook` wdrażasz z `--no-verify-jwt`,
+ustawiasz sekret `STRAVA_VERIFY_TOKEN` i rejestrujesz subskrypcję w Strava.
 
 ### 3. Strava (panel aplikacji)
 
