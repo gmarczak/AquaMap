@@ -1,8 +1,11 @@
 // @ts-nocheck
 import { submitNewPlace } from './contributions.js';
-import { map } from './map.js';
+import { map, nearestPlace } from './map.js';
+
+const DUPLICATE_RADIUS_M = 150;
 
 let picked = null;
+let duplicateConfirmed = false; // czy użytkownik potwierdził dodanie mimo duplikatu
 
 function showHint(text) {
     let el = document.getElementById('map-hint');
@@ -25,7 +28,20 @@ function openAddModal(coords) {
     document.getElementById('add-tory').value = 6;
     document.getElementById('add-coords').textContent =
         `Lokalizacja: ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`;
-    document.getElementById('add-msg').textContent = '';
+
+    const msg = document.getElementById('add-msg');
+    duplicateConfirmed = false;
+
+    // Ostrzeżenie o możliwym duplikacie: istnieje basen w promieniu ~150 m.
+    const near = nearestPlace(coords.lat, coords.lng);
+    if (near && near.km * 1000 <= DUPLICATE_RADIUS_M) {
+        const meters = Math.round(near.km * 1000);
+        const nazwa = near.place.nazwa || 'istniejący basen';
+        msg.textContent = `⚠️ ${meters} m stąd jest już „${nazwa}". Sprawdź, czy nie dodajesz duplikatu — jeśli to inny obiekt, kliknij „Dodaj".`;
+    } else {
+        msg.textContent = '';
+    }
+
     document.getElementById('add-modal').classList.remove('hidden');
 }
 
@@ -87,6 +103,16 @@ export function setupAddPlaceUI() {
 
         if (!payload.nazwa) {
             msg.textContent = 'Podaj nazwę basenu.';
+            return;
+        }
+
+        // Twarde ostrzeżenie o duplikacie: wymagamy drugiego kliknięcia.
+        const near = nearestPlace(picked.lat, picked.lng);
+        if (near && near.km * 1000 <= DUPLICATE_RADIUS_M && !duplicateConfirmed) {
+            const meters = Math.round(near.km * 1000);
+            const nazwa = near.place.nazwa || 'istniejący basen';
+            msg.textContent = `⚠️ W promieniu ${meters} m istnieje już „${nazwa}". Kliknij „Dodaj" ponownie, aby dodać mimo to.`;
+            duplicateConfirmed = true;
             return;
         }
 

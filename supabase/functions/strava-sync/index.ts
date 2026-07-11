@@ -115,8 +115,13 @@ Deno.serve(async (req) => {
         // Baseny do dopasowania po GPS.
         const { data: places } = await admin.from('places').select('id, lat, lng');
 
+        const MIN_SWIM_M = 100; // spójne z limitem w award_activity_xp
         let awarded = 0;
+        let skipped = 0; // treningi za krótkie (bez EXP)
         for (const a of swims) {
+            if (Number(a.distance ?? 0) < MIN_SWIM_M) {
+                skipped++;
+            }
             const pool = matchPool(a.start_latlng, places ?? []);
             const { data: up } = await admin.from('activities').upsert({
                 user_id: user.id,
@@ -145,7 +150,7 @@ Deno.serve(async (req) => {
         const { data: profile } = await admin
             .from('profiles').select('xp, level').eq('id', user.id).single();
 
-        return json({ ok: true, swims: swims.length, awarded, xp: profile?.xp, level: profile?.level });
+        return json({ ok: true, swims: swims.length, awarded, skipped, dailyCap: 200, xp: profile?.xp, level: profile?.level });
     } catch (e) {
         return json({ error: String(e) }, 500);
     }

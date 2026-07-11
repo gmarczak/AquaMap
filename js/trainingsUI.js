@@ -92,7 +92,14 @@ export function setupTrainingsUI() {
         msg.textContent = 'Synchronizuję ze Strava…';
         try {
             const r = await syncStrava();
-            msg.textContent = `Zsynchronizowano ${r.swims} treningów · +${r.awarded} EXP · poziom ${r.level}.`;
+            let text = `Zsynchronizowano ${r.swims} treningów · +${r.awarded} EXP · poziom ${r.level}.`;
+            if (r.skipped) {
+                text += ` Pominięto ${r.skipped} za krótkich (< 100 m).`;
+            }
+            if (r.swims > 0 && r.awarded === 0 && !r.skipped) {
+                text += ` Brak EXP — prawdopodobnie osiągnięto dzienny limit (${r.dailyCap ?? 200}).`;
+            }
+            msg.textContent = text;
             await refresh();
         } catch (error) {
             msg.textContent = `Błąd synchronizacji: ${error.message || error}`;
