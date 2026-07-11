@@ -47,11 +47,18 @@ harmonogramy.
   `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_STRAVA_CLIENT_ID`.
 - Sekrety Strava (`STRAVA_CLIENT_SECRET`) tylko w Edge Functions — nigdy w buildzie.
 
-## Luki wg planu (P1, jeszcze nie w kodzie)
-- Rate-limiting w Edge Functions.
-- Ostrzeżenie o duplikacie basenu (~150 m) przy dodawaniu.
-- Dzienny limit EXP + minimalny dystans/czas (anty-farming).
-- Cienkie pokrycie testami (moderacja, EXP, mapa, zgłoszenia).
+## Luki wg planu (P1)
+- ✅ Ostrzeżenie o duplikacie basenu (~150 m) — `geo.nearestPlace` + `addPlaceUI`
+  (potwierdzenie „dodaj mimo to"). Testy w `geo.test.js`.
+- ✅ Dzienny limit EXP (200) + min. dystans 100 m — migracja `0006_anti_abuse.sql`
+  (`award_activity_xp`); komunikaty w `strava-sync` + „Moje treningi".
+- ✅ Rate-limiting w Edge Functions — migracja `0007_rate_limit.sql`
+  (`consume_rate_limit`); `strava-sync` 6/godz., `strava-exchange` 10/godz.,
+  odpowiedź 429 + komunikat dla użytkownika.
+- ✅ Testy harmonogramu (`schedule`: `naMinuty`/`axisRange`/`axisTicks`/
+  `lanesForSection`) + zgłoszeń (`contributions`: insert/kind/payload, moderacja).
+- ⏳ Dalsze testy wymagające lokalnej bazy: `apply_contribution`, RLS (audyt);
+  oraz wydzielenie testowalnej logiki z `app.js`.
 
 ## Zasady bezpieczeństwa danych
 - Klient nigdy nie pisze wprost do „żywych" danych ani nie widzi sekretów.

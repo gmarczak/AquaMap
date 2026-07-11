@@ -65,6 +65,15 @@ Deno.serve(async (req) => {
 
         const admin = createClient(url, serviceKey);
 
+        // Rate-limit: maks. 6 synchronizacji na godzinę na użytkownika.
+        const { data: rl } = await admin.rpc('consume_rate_limit', {
+            p_user: user.id, p_action: 'strava_sync', p_max: 6, p_window_seconds: 3600
+        });
+        if (rl && rl.allowed === false) {
+            const mins = Math.max(1, Math.ceil((rl.retry_after ?? 60) / 60));
+            return json({ error: `Za dużo synchronizacji. Spróbuj ponownie za ${mins} min.`, retry_after: rl.retry_after }, 429);
+        }
+
         const { data: integ } = await admin
             .from('integrations')
             .select('*')

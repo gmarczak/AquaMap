@@ -26,9 +26,49 @@ function etykietaDnia(key) {
     return (DNI.find(d => d.key === key) || { label: key }).label;
 }
 
-function naMinuty(hhmm) {
+export function naMinuty(hhmm) {
     const [h, m] = String(hhmm).split(':').map(Number);
     return (h || 0) * 60 + (m || 0);
+}
+
+// Zakres osi czasu: od najwcześniejszego początku do najpóźniejszego końca
+// (zaokrąglony do pełnych godzin), z fallbackiem 6–22 i minimum 1 h.
+export function axisRange(sloty) {
+    const czasy = (sloty ?? [])
+        .flatMap(s => [naMinuty(s.od), naMinuty(s.do)])
+        .filter(n => !Number.isNaN(n));
+    const minStart = czasy.length ? Math.min(...czasy) : 6 * 60;
+    const maxEnd = czasy.length ? Math.max(...czasy) : 22 * 60;
+    const OD = Math.floor(minStart / 60) * 60;
+    const DO = Math.max(Math.ceil(maxEnd / 60) * 60, OD + 60);
+    return { OD, DO, ZAKRES: DO - OD };
+}
+
+// Znaczniki godzin na osi. Krok rośnie z długością zakresu, by nie zagęszczać.
+export function axisTicks(OD, DO) {
+    const godzin = (DO - OD) / 60;
+    const krok = godzin <= 7 ? 1 : godzin <= 14 ? 2 : 3;
+    const znaczniki = [];
+    for (let h = OD / 60; h <= DO / 60; h += krok) {
+        znaczniki.push(h);
+    }
+    return znaczniki;
+}
+
+// Numery torów 1..max dla sekcji. Tory bez zajętych slotów też się pokazują.
+// Dla basenów bez sekcji (sekcja === null) podpieramy się liczba_torow.
+export function lanesForSection(sloty, sekcja, liczbaTorow = 0) {
+    const numery = (sloty ?? [])
+        .filter(s => s.sekcja === sekcja && Number.isFinite(s.tor))
+        .map(s => s.tor);
+    let max = numery.length ? Math.max(...numery) : 0;
+    if (sekcja === null) {
+        max = Math.max(max, liczbaTorow);
+    }
+    if (max <= 0) {
+        return [];
+    }
+    return Array.from({ length: max }, (_, i) => i + 1);
 }
 
 // Renderuje harmonogram torów do kontenera DOM.
@@ -37,23 +77,9 @@ function naMinuty(hhmm) {
 export function renderScheduleTable(container, sloty, liczbaTorow = 0) {
     const zajete = sloty.filter(s => s.status !== 'wolny');
 
-    // Zakres osi: od najwcześniejszego początku do najpóźniejszego końca
-    // (zaokrąglony do pełnych godzin), z fallbackiem 6–22.
-    const czasy = sloty.flatMap(s => [naMinuty(s.od), naMinuty(s.do)]).filter(n => !Number.isNaN(n));
-    const minStart = czasy.length ? Math.min(...czasy) : 6 * 60;
-    const maxEnd = czasy.length ? Math.max(...czasy) : 22 * 60;
-    const OD = Math.floor(minStart / 60) * 60;
-    const DO = Math.max(Math.ceil(maxEnd / 60) * 60, OD + 60);
-    const ZAKRES = DO - OD;
-
+    const { OD, DO, ZAKRES } = axisRange(sloty);
     const procent = min => ((Math.min(Math.max(min, OD), DO) - OD) / ZAKRES) * 100;
-
-    const godzin = ZAKRES / 60;
-    const krok = godzin <= 7 ? 1 : godzin <= 14 ? 2 : 3;
-    const znaczniki = [];
-    for (let h = OD / 60; h <= DO / 60; h += krok) {
-        znaczniki.push(h);
-    }
+    const znaczniki = axisTicks(OD, DO);
 
     const sekcje = Array.from(new Set(sloty.map(s => s.sekcja).filter(Boolean)));
     const maSekcje = sekcje.length > 0;
@@ -69,19 +95,7 @@ export function renderScheduleTable(container, sloty, liczbaTorow = 0) {
     // znikać. Dla basenów bez podziału na sekcje podpieramy się liczba_torow,
     // by pokazać też tory wyższe niż występują w danych (sekcji to nie dotyczy —
     // liczba_torow nie rozróżnia niecek).
-    function toryDlaSekcji(sekcja) {
-        const numery = sloty
-            .filter(s => s.sekcja === sekcja && Number.isFinite(s.tor))
-            .map(s => s.tor);
-        let max = numery.length ? Math.max(...numery) : 0;
-        if (sekcja === null) {
-            max = Math.max(max, liczbaTorow);
-        }
-        if (max <= 0) {
-            return [];
-        }
-        return Array.from({ length: max }, (_, i) => i + 1);
-    }
+    const toryDlaSekcji = sekcja => lanesForSection(sloty, sekcja, liczbaTorow);
 
     function rysujTor(tor) {
         const wpisy = zajete.filter(s =>

@@ -40,6 +40,18 @@ Deno.serve(async (req) => {
             return json({ error: 'Nieautoryzowany.' }, 401);
         }
 
+        // Zapis tokenów i limit robimy rolą serwisową.
+        const admin = createClient(url, serviceKey);
+
+        // Rate-limit: maks. 10 prób połączenia na godzinę na użytkownika.
+        const { data: rl } = await admin.rpc('consume_rate_limit', {
+            p_user: user.id, p_action: 'strava_exchange', p_max: 10, p_window_seconds: 3600
+        });
+        if (rl && rl.allowed === false) {
+            const mins = Math.max(1, Math.ceil((rl.retry_after ?? 60) / 60));
+            return json({ error: `Za dużo prób połączenia. Spróbuj ponownie za ${mins} min.`, retry_after: rl.retry_after }, 429);
+        }
+
         // Wymień kod na tokeny Strava (client_secret po stronie serwera).
         const resp = await fetch('https://www.strava.com/oauth/token', {
             method: 'POST',
@@ -57,7 +69,6 @@ Deno.serve(async (req) => {
         }
 
         // Zapis tokenów rolą serwisową (klient nie ma dostępu do integrations).
-        const admin = createClient(url, serviceKey);
         const { error } = await admin.from('integrations').upsert({
             user_id: user.id,
             provider: 'strava',

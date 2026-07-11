@@ -2,7 +2,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { MAPBOX_ACCESS_TOKEN } from './config.js';
 import { isOpenNow } from './openingHours.js';
-import { distanceKm } from './geo.js';
+import { nearestPlace as nearestPlaceOf } from './geo.js';
 
 export { distanceKm } from './geo.js';
 
@@ -12,22 +12,10 @@ export let geolocateControl;
 const PLACES_SOURCE_ID = 'places';
 const placesById = new Map();
 
-// Najbliższy istniejący basen względem podanego punktu.
+// Najbliższy istniejący basen względem podanego punktu (spośród wczytanych).
 // Zwraca { place, km } albo null, gdy brak basenów.
 export function nearestPlace(lat, lng) {
-    let best = null;
-    let bestKm = Infinity;
-    for (const place of placesById.values()) {
-        if (place.lat == null || place.lng == null) {
-            continue;
-        }
-        const km = distanceKm(lat, lng, place.lat, place.lng);
-        if (km < bestKm) {
-            bestKm = km;
-            best = place;
-        }
-    }
-    return best ? { place: best, km: bestKm } : null;
+    return nearestPlaceOf(lat, lng, [...placesById.values()]);
 }
 
 function prefersDark() {
