@@ -1,111 +1,52 @@
 # AquaMap
 
-PWA z mapą basenów i pływalni w Polsce. Przeglądanie basenów (mapa + lista),
-godziny otwarcia, cennik, harmonogram torów. Społeczność współtworzy dane
-(zgłoszenia + moderacja, rola `trusted`). Integracja ze Strava rejestruje
-treningi pływackie i nalicza EXP/poziomy (grywalizacja).
+Baseny w Polsce, dziennik pływania i gra w jednym: za każdy trening EXP, poziomy, passa tygodniowa,
+monety, przedmioty, questy tygodnia, wyprawy (Alcatraz → La Manche) i odznaki.
+Połączenie dawnego AquaMap (mapa basenów) i AquaQuest (RPG dla pływaków), przepisane od zera.
 
-**Produkcja:** https://aqua-map.vercel.app
+## Funkcje
+
+- **Dziennik**: trening ręcznie (dystans, czas, tempo /100 m, serie ze stylem, samopoczucie, notatka, basen, niecka 25/50) — działa offline,
+  zapisuje się po powrocie sieci. Historia tygodniami, statystyki tygodnia.
+- **Baseny**: ok. 850 obiektów z OpenStreetMap na mapie (MapLibre + OpenFreeMap, klastry) i liście (wyszukiwanie, „najbliższe”),
+  godziny otwarcia z „otwarte teraz”, kontakt, nawigacja, Twoje treningi na danym basenie, „mój basen”.
+- **Gra** (cała logika w Postgresie, klient nie może przyznać sobie nagród):
+  - EXP = dystans/10 + minuty + 5 × seria (max 20), × (1 + passa% + ekwipunek%); passa +5%/tydzień do +25%
+  - rekord tempa +50 EXP; nagrody za 2 pierwsze treningi dnia; tempo nie szybsze niż 1:00/100 m, max 10 km i 4 h
+  - poziom: 200 × poziom EXP do następnego (max 50), skrzynka za każdy poziom
+  - loot: 10% + 8%/km (max 60%), 12 przedmiotów w 4 rzadkościach, bonus % EXP lub monet (max +30% każdy)
+  - sklep i sprzedaż za monety (1 moneta / 100 m), 3 questy tygodnia, 4 wyprawy, 9 odznak
+  - usunięcie treningu cofa jego EXP, monety, przedmioty i ich sprzedaż (kaskada w księdze `swim.rewards`)
+- **Strava** (i Garmin przez Stravę): OAuth, import 60 dni, webhook na nowe aktywności, bez dublowania treningów wpisanych ręcznie.
 
 ## Stack
 
-Vite + vanilla JS (ES modules), Mapbox GL, Supabase (Auth, Postgres + RLS,
-Storage, Edge Functions), hosting Vercel, PWA (manifest + service worker).
-Harmonogramy scrapuje n8n.
+Next.js 16 (App Router), TypeScript, Tailwind v4, TanStack Query (cache i kolejka offline w IndexedDB), Supabase (Postgres + RLS + RPC +
+Edge Functions, schemat `swim` we wspólnym projekcie z Nawykami/Finansami/Garażem), MapLibre GL, Vercel, Vitest.
 
-## Uruchomienie lokalne
+## Uruchomienie
 
 ```bash
+cp .env.example .env.local
 npm install
-cp .env.example .env   # uzupełnij zmienne (niżej)
-npm run dev            # http://localhost:5173
+npm run dev
 ```
 
-Skrypty: `npm run dev` · `npm run build` (→ `dist/`) · `npm run typecheck`
-(tsc) · `npm run test` (vitest).
+Schemat `swim` musi być wystawiony w Supabase: Integrations → Data API → Exposed schemas.
 
-## Zmienne środowiskowe
+## Baza
 
-W `.env` (lokalnie) oraz w Vercel → Project → Settings → Environment Variables
-(Production). Wszystkie `VITE_*` są publiczne (trafiają do buildu frontendu):
+- `supabase/migrations/` — `swim_init` (tabele, RLS, gra, sklep, questy), `swim_osm_import` (import basenów).
+- `supabase/tests/behavior.sql` — nagrody, limity, sklep, questy, RLS, kaskady (CI na Postgresie 17).
+- Import basenów: odpowiedź Overpass API → `select swim.import_osm(content::jsonb)` (przez `pg_net`, rola serwisowa).
 
-```
-VITE_MAPBOX_ACCESS_TOKEN=   # token Mapbox
-VITE_SUPABASE_URL=          # URL projektu Supabase
-VITE_SUPABASE_ANON_KEY=     # klucz anon (publiczny, chroniony przez RLS)
-VITE_STRAVA_CLIENT_ID=      # Client ID aplikacji Strava (publiczny)
-```
+## Strava
 
-Sekret `STRAVA_CLIENT_SECRET` **nigdy** nie trafia do frontendu — tylko do
-Supabase Edge Functions (poniżej).
+1. Aplikacja na https://www.strava.com/settings/api — *Authorization Callback Domain* = domena aplikacji.
+2. Sekrety Edge Functions: `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_VERIFY_TOKEN` (dowolny losowy ciąg).
+3. Vercel: `NEXT_PUBLIC_STRAVA_CLIENT_ID`.
+4. W Ustawieniach (konto admina): „Admin: włącz webhook Stravy”.
 
-## Struktura
+Funkcja: `supabase/functions/aquamap-strava` (deploy z `verify_jwt = false` — webhook Stravy nie ma JWT; użytkownika sprawdza sama).
 
-```
-js/                 logika frontendu (app.js główny; map, schedule, auth*,
-                    contributions, moderationUI, strava, trainingsUI, itd.)
-supabase/migrations/  0001 profile · 0002 contributions+moderacja · 0003 harmonogramy
-                      0004 strava+xp · 0005 zdjęcia · 0006 limity EXP · 0007 rate-limit
-                      0008 auto-awans trusted
-supabase/functions/   strava-exchange, strava-sync, strava-webhook (Edge Functions, Deno)
-supabase/tests/       verify.sql — audyt RLS + test apply_contribution
-docs/                 PLAN + dokumenty SETUP
-```
-
-## Wdrożenie
-
-### 1. Baza (Supabase)
-
-Uruchom migracje `0001`–`0008` (SQL Editor → wklej pliki po kolei, lub
-`npx supabase db push`). W **Authentication → URL Configuration**:
-
-- **Site URL:** `https://aqua-map.vercel.app`
-- **Redirect URLs:** `https://aqua-map.vercel.app/**` oraz `http://localhost:5173`
-
-### 2. Edge Functions (Strava)
-
-```bash
-npx supabase link --project-ref <ref-projektu>
-npx supabase secrets set STRAVA_CLIENT_ID=... STRAVA_CLIENT_SECRET=...
-npx supabase functions deploy strava-exchange strava-sync
-```
-
-`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` są dostępne w
-Edge Functions automatycznie.
-
-Opcjonalnie webhook (push treningów zamiast ręcznego sync) — patrz
-`docs/SETUP-webhook-strava.md`: `strava-webhook` wdrażasz z `--no-verify-jwt`,
-ustawiasz sekret `STRAVA_VERIFY_TOKEN` i rejestrujesz subskrypcję w Strava.
-
-### 3. Strava (panel aplikacji)
-
-https://www.strava.com/settings/api → **Authorization Callback Domain:**
-`aqua-map.vercel.app` (sama domena, bez `https://`).
-
-### 4. Vercel
-
-Projekt `aqua-map` (team `gmarczaks-projects`), auto-deploy z gałęzi `main`.
-Ustaw zmienne `VITE_*` (Production) i przebuduj. Uwaga: włączone Vercel
-Authentication chowa adresy preview/branch za logowaniem; publiczna jest
-domena produkcyjna `aqua-map.vercel.app`.
-
-## Testy
-
-```bash
-npm run test        # frontend (vitest): geo, schedule, contributions, database, openingHours
-```
-
-Baza: `supabase/tests/verify.sql` (SQL Editor) — audyt RLS oraz test
-`apply_contribution` w transakcji z ROLLBACK (nie zapisuje danych).
-
-## Bezpieczeństwo danych
-
-- Klient nigdy nie pisze wprost do „żywych" danych ani nie widzi sekretów.
-- Zapisy idą przez `contributions` + RLS; `apply_contribution` (SECURITY
-  DEFINER) scala payload do `places` / `harmonogram_torow`.
-- `xp`/`level` oraz tokeny integracji — zapis wyłącznie rolą serwisową.
-- Edge Functions mają rate-limiting (`strava-sync` 6/godz., `strava-exchange`
-  10/godz.); EXP ma dzienny limit (200) i minimalny dystans (100 m).
-- Sanityzacja wejść: `escapeHtml` / `safeUrl`.
-
-Pełna, priorytetyzowana lista zadań i stan projektu: patrz `CLAUDE.md`.
+Dane basenów © współtwórcy OpenStreetMap, licencja ODbL.
