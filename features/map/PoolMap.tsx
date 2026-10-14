@@ -45,7 +45,7 @@ export function PoolMap({ pools, selectedId, onSelect, center, user }: Props) {
       attributionControl: { compact: true },
     });
     map.current = m;
-    m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     m.on("load", () => {
       m.addSource("pools", { type: "geojson", data: toGeoJSON([]), cluster: true, clusterRadius: 44, clusterMaxZoom: 11 });
       m.addLayer({

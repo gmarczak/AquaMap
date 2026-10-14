@@ -125,6 +125,8 @@
 
 html,
 body {
+  /* PWA na iPhonie rysuje pod paskiem statusu (viewport-fit=cover): odsuwamy treść spod notcha */
+  padding-top: env(safe-area-inset-top);
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);

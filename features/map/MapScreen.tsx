@@ -73,7 +73,7 @@ export function MapScreen() {
   const kmTo = pool && (user ?? home) ? distanceKm((user ?? home)!, pool) : null;
 
   return (
-    <main className="relative h-[calc(100dvh-5.5rem-env(safe-area-inset-bottom))] overflow-hidden">
+    <main className="relative h-[calc(100dvh-5.5rem-env(safe-area-inset-bottom)-env(safe-area-inset-top))] overflow-hidden">
       <h1 className="sr-only">Baseny</h1>
       <div className="absolute inset-x-0 top-0 z-10 mx-auto flex max-w-lg flex-col gap-2 px-4 pt-4">
         <div className="flex gap-2">
