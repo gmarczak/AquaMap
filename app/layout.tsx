@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "AquaMap",
   description: "Baseny w Polsce, dziennik pływania i gra: EXP, poziomy, wyprawy i loot za każdy trening.",
   applicationName: "AquaMap",
-  appleWebApp: { capable: true, title: "AquaMap", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "AquaMap", statusBarStyle: "black-translucent" },
   icons: { apple: "/apple-touch-icon.png" },
   formatDetection: { telephone: false },
 };
