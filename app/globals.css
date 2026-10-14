@@ -14,6 +14,7 @@
   --muted: #6f675e;
   --done-text: #4a443e;
   --accent: #1d5f86;
+  --status-bar: #1d5f86;
   --accent-contrast: #f5f0e8;
   --control: #b9ae9e;
   --dot-off: #d3c8b7;
@@ -43,6 +44,7 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
   --bg: #25272b;
+  --status-bar: #25272b;
   --surface: #303237;
   --border: #3c3f44;
   --text: #ecedee;
@@ -76,6 +78,7 @@
   :root[data-theme="system"] {
     color-scheme: dark;
     --bg: #25272b;
+    --status-bar: #25272b;
     --surface: #303237;
     --border: #3c3f44;
     --text: #ecedee;
@@ -125,13 +128,28 @@
 
 html,
 body {
-  /* PWA na iPhonie rysuje pod paskiem statusu (viewport-fit=cover): odsuwamy treść spod notcha */
-  padding-top: env(safe-area-inset-top);
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * PWA na iPhonie (status-bar-style black-translucent) rysuje pod paskiem statusu, a jego napisy są zawsze białe.
+ * Odsuwamy treść spod notcha, a pas pod zegarem malujemy kolorem, na którym biały tekst jest czytelny.
+ */
+body {
+  padding-top: env(safe-area-inset-top);
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: env(safe-area-inset-top);
+  background: var(--status-bar);
+  z-index: 100;
+  pointer-events: none;
 }
 
 button {
