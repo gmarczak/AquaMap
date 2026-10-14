@@ -1,23 +1,51 @@
 name: CI
 
 on:
-  pull_request:
-    branches: [main]
   push:
     branches: [main]
+  pull_request:
 
 jobs:
-  build:
+  app:
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://fswfdsooabadlcpekiyx.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
-
       - run: npm ci
       - run: npm run typecheck
-      - run: npm run test
+      - run: npm run lint
+      - run: npm test
       - run: npm run build
+
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Migracje od zera + testy zachowania (RLS, ograniczenia, RPC)
+        run: |
+          psql -v ON_ERROR_STOP=1 -f supabase/tests/auth_stub.sql
+          for f in supabase/migrations/*.sql; do sed '/^create extension/d' "$f" | psql -v ON_ERROR_STOP=1; done
+          psql -f supabase/tests/behavior.sql > out.txt 2>&1 || true
+          cat out.txt
+          # każda kontrola „ok_…” musi zwrócić t, a błędów ma być dokładnie tyle, ile oczekiwanych w pliku testów
+          test "$(grep -c '^ f' out.txt)" -eq 0
+          test "$(grep -c '^ t' out.txt)" -eq 28
+          test "$(grep -c 'ERROR' out.txt)" -eq 15
